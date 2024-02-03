@@ -34,22 +34,6 @@ Install [VS Code REST Client](https://marketplace.visualstudio.com/items?itemNam
 
 ## Run in production
 
-To run in production you will need a MongoDB database running.
-
-The app will default by connecting to a local database on `mongodb://localhost:27017`.
-
-You can connect to a different database (e.g. a MongoDB instance in the cloud) by setting this environment variable:
-
-```bash
-export DB_CONNECTION_STRING=<your db connection string>
-```
-
-Or on Windows:
-
-```bash
-set DB_CONNECTION_STRING=<your db connection string>
-```
-
 Start the application in production mode:
 
 ```bash

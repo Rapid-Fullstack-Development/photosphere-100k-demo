@@ -15,6 +15,10 @@
   },
   "homepage": "https://github.com/Rapid-Fullstack-Development/photosphere-monorepo#readme",
   "dependencies": {
-    "mongodb": "^5.0.1"
+    "mongodb": "^5.0.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.8"
   }
 }

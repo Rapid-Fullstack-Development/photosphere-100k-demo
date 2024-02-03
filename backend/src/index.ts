@@ -1,4 +1,3 @@
-import { MongoClient } from "mongodb";
 import { createServer } from "./server";
 import { CloudStorage } from "./services/cloud-storage";
 import { FileStorage } from "./services/file-storage";
@@ -12,19 +11,10 @@ async function main() {
         throw new Error(`Set environment variable PORT.`);
     }
 
-    const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
-    if (DB_CONNECTION_STRING === undefined) {
-        throw new Error(`Set environment variable DB_CONNECTION_STRING.`);
-    }
-
-    const client = new MongoClient(DB_CONNECTION_STRING);
-    await client.connect();
-
-    const db = client.db(dbName);
     const storage = process.env.NODE_ENV === "production"
         ? new CloudStorage()
         : new FileStorage();
-    const app = await createServer(db, () => new Date(Date.now()), storage);
+    const app = await createServer(() => new Date(Date.now()), storage);
 
     app.listen(PORT, () => {
         console.log(`Photosphere listening on port ${PORT}`);

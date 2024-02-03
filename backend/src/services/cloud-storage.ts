@@ -43,6 +43,21 @@ export class CloudStorage implements IStorage {
     }
 
     //
+    // List files in storage.
+    //
+    list(type: AssetType): Promise<string[]> {    
+        const listParams: aws.S3.Types.ListObjectsV2Request = {
+            Bucket: this.bucket,
+            Prefix: `${type}/`,
+        };
+        return this.s3.listObjectsV2(listParams).promise().then((data) => {
+            return data.Contents?.map((object) => {
+                return object.Key?.split("/")[1] as string;
+            }) ?? [];
+        });
+    }
+
+    //
     // Reads an file from stroage.
     //
     read(type: AssetType, assetId: string): Readable {

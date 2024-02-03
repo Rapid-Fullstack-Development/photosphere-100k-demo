@@ -1,21 +1,21 @@
 import express, { Request } from "express";
 import cors from "cors";
 import { IAsset } from "./lib/asset";
-import { ObjectId, Db } from "mongodb";
 import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
+import { v4 as makeUuid } from "uuid";
+import { Readable } from "stream";
+import { text } from 'node:stream/consumers';
+import { read } from "fs";
 
 const API_KEY = process.env.API_KEY;
 
 //
 // Starts the REST API.
 //
-export async function createServer(db: Db, now: () => Date, storage: IStorage) {
+export async function createServer(now: () => Date, storage: IStorage) {
 
     await storage.init();
-
-    const assetsCollection = db.collection<IAsset>("assets");
-    await assetsCollection.createIndex({ searchText: "text" });
 
     const app = express();
     app.use(cors());
@@ -76,12 +76,38 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     }
 
     //
+    // Writes metadata for an asset.
+    //
+    async function writeMetadata(assetId: string, asset: IAsset): Promise<void> {
+        await storage.write("metadata", assetId + ".json", "application/json", Readable.from(JSON.stringify(asset)));
+    }
+
+    //
+    // Reads metadata for an asset.
+    //
+    async function readMetadata(assetId: string): Promise<IAsset> {
+        const metadataStream = await storage.read("metadata", assetId + ".json");
+        const metadataText = await text(metadataStream);
+        const metadata = JSON.parse(metadataText);
+        return metadata;
+    }
+
+    //
+    // Update partial fields in metadata.
+    //
+    async function updateMetadata(assetId: string, update: Partial<IAsset>): Promise<void> {
+        const metadata = await readMetadata(assetId);
+        Object.assign(metadata, update);
+        await writeMetadata(assetId, metadata);
+    }
+
+    //
     // Uploads metadata for an asset and allocats a new asset id.
     //
     app.post("/metadata", express.json(), async (req, res) => {
 
-        const assetId = new ObjectId();
         const metadata = req.body;
+        const assetId = metadata.hash || makeUuid();
         const fileName = getValue<string>(metadata, "fileName");
         const width = getValue<number>(metadata, "width");
         const height = getValue<number>(metadata, "height");
@@ -114,27 +140,24 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
             newAsset.sortDate = newAsset.photoDate;
         }
 
-        await assetsCollection.insertOne(newAsset);
+        await writeMetadata(assetId, newAsset);
 
         res.json({
             assetId: assetId,
         });
-
-        await updateSearchText(assetId);
     });
-
 
     //
     // Uploads a new asset.
     //
     app.post("/asset", async (req, res) => {
         
-        const assetId = new ObjectId(getHeader(req, "id"));
+        const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
         
         await storage.write("original", assetId.toString(), contentType, req);
 
-        await assetsCollection.updateOne({ _id: assetId }, { $set: { assetContentType:  contentType } });
+        await updateMetadata(assetId, { assetContentType: contentType });
 
         res.json({
             assetId: assetId,
@@ -151,14 +174,10 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const asset = await assetsCollection.findOne({ _id: new ObjectId(assetId) });
-        if (!asset || !asset.assetContentType) {
-            res.sendStatus(404);
-            return;
-        }
+        const metadata = await readMetadata(assetId);
 
         res.writeHead(200, {
-            "Content-Type": asset.assetContentType,
+            "Content-Type": metadata.assetContentType,
         });
 
         const stream = storage.read("original", assetId);
@@ -170,12 +189,12 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.post("/thumb", async (req, res) => {
         
-        const assetId = new ObjectId(getHeader(req, "id"));
+        const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
 
         await storage.write("thumb", assetId.toString(), contentType, req);
 
-        await assetsCollection.updateOne({ _id: assetId }, { $set: { thumbContentType:  contentType } });
+        await updateMetadata(assetId, { thumbContentType: contentType });
         
         res.sendStatus(200);
     });
@@ -190,35 +209,17 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const asset = await assetsCollection.findOne({ _id: new ObjectId(assetId) });
-        if (!asset || (!asset.thumbContentType && !asset.assetContentType)) {
-            // The asset doesn't exist or it's content was never uploaded.
-            res.sendStatus(404);
-            return;
-        }
+        const metadata = await readMetadata(assetId);
 
-        if (asset.thumbContentType) {
-            //
-            // Return the thumbnail.
-            //
-            res.writeHead(200, {
-                "Content-Type": asset.thumbContentType,
-            });
-    
-            const stream = await storage.read("thumb", assetId);
-            stream.pipe(res);
-        }
-        else {
-            // 
-            // No thumbnail, return the original asset.
-            //
-            res.writeHead(200, {
-                "Content-Type": asset.assetContentType,
-            });
-    
-            const stream = await storage.read("original", assetId);
-            stream.pipe(res);
-        }
+        //
+        // Return the thumbnail.
+        //
+        res.writeHead(200, {
+            "Content-Type": metadata.thumbContentType,
+        });
+
+        const stream = await storage.read("thumb", assetId);
+        stream.pipe(res);
     });
 
     //
@@ -226,12 +227,12 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.post("/display", async (req, res) => {
         
-        const assetId = new ObjectId(getHeader(req, "id"));
+        const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
         
         await storage.write("display", assetId.toString(), contentType, req);
 
-        await assetsCollection.updateOne({ _id: assetId }, { $set: { displayContentType:  contentType } });
+        await updateMetadata(assetId, { displayContentType: contentType });
         
         res.sendStatus(200);
     });
@@ -246,35 +247,17 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const asset = await assetsCollection.findOne({ _id: new ObjectId(assetId) });
-        if (!asset || (!asset.displayContentType && !asset.assetContentType)) {
-            // The asset doesn't exist or it's content was never uploaded.
-            res.sendStatus(404);
-            return;
-        }
+        const metadata = await readMetadata(assetId);
 
-        if (asset.displayContentType) {
-            //
-            // Return the display version of the asset.
-            //
-            res.writeHead(200, {
-                "Content-Type": asset.displayContentType,
-            });
-    
-            const stream = await storage.read("display", assetId);
-            stream.pipe(res);
-        }
-        else {
-            // 
-            // No display asset, return the original asset.
-            //
-            res.writeHead(200, {
-                "Content-Type": asset.assetContentType,
-            });
-    
-            const stream = await storage.read("original", assetId);
-            stream.pipe(res);
-        }
+        //
+        // Return the display version of the asset.
+        //
+        res.writeHead(200, {
+            "Content-Type": metadata.displayContentType,
+        });
+
+        const stream = await storage.read("display", assetId);
+        stream.pipe(res);
     });
 
     //
@@ -282,19 +265,17 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.post("/asset/add-label", express.json(), async (req, res) => {
 
-        const id = new ObjectId(getValue<string>(req.body, "id"));
+        const id = getValue<string>(req.body, "id");
         const label = getValue<string>(req.body, "label");
-        await assetsCollection.updateOne(
-            { _id: id },
-            {
-                $push: {
-                    labels: label,
-                },
-            }
-        );
-        res.sendStatus(200);
 
-        await updateSearchText(id);
+        const metadata = await readMetadata(id);
+        if (!metadata.labels) {
+            metadata.labels = [];
+        }
+        metadata.labels.push(label);
+        await writeMetadata(id, metadata);
+
+        res.sendStatus(200);
     });
 
     //
@@ -302,19 +283,16 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.post("/asset/remove-label", express.json(), async (req, res) => {
 
-        const id = new ObjectId(getValue<string>(req.body, "id"));
+        const id = getValue<string>(req.body, "id");
         const label = getValue<string>(req.body, "label");
-        await assetsCollection.updateOne(
-            { _id: id },
-            {
-                $pull: {
-                    labels: label,
-                },
-            }
-        );
-        res.sendStatus(200);
 
-        await updateSearchText(id);
+        const metadata = await readMetadata(id);
+        if (metadata.labels) {
+            metadata.labels = metadata.labels.filter(l => l !== label);
+            await writeMetadata(id, metadata);
+        }
+
+        res.sendStatus(200);
     });
 
     //
@@ -322,19 +300,12 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.post("/asset/description", express.json(), async (req, res) => {
 
-        const id = new ObjectId(getValue<string>(req.body, "id"));
+        const id = getValue<string>(req.body, "id");
         const description = getValue<string>(req.body, "description");
-        await assetsCollection.updateOne(
-            { _id: id },
-            {
-                $set: {
-                    description: description,
-                },
-            }
-        );
-        res.sendStatus(200);
 
-        await updateSearchText(id);
+        await updateMetadata(id, { description });
+                
+        res.sendStatus(200);
     });
 
     //
@@ -346,12 +317,14 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
         if (!hash) {
             throw new Error(`Hash not specified in query parameters.`);
         }
-        
-        const asset = await assetsCollection.findOne({ hash: hash });
-        if (asset) {
-            res.json({ assetId: asset._id });
+
+        try {
+            const metadata = await readMetadata(hash);
+            // Success. The hash is the asset id.
+            res.json({ assetId: hash });
         }
-        else {
+        catch (err) {
+            // The asset doesn't exist.
             res.json({ assetId: undefined });
         }
     });
@@ -361,71 +334,26 @@ export async function createServer(db: Db, now: () => Date, storage: IStorage) {
     //
     app.get("/assets", async (req, res) => {
 
+        //fio:
         const search = req.query.search as string;
         const skip = getIntQueryParam(req, "skip");
         const limit = getIntQueryParam(req, "limit");
-
-        const query: any = {};
         
-        if (search) {
-            query.$text = {
-                $search: search.toLowerCase(),
-            };
-        }        
+        // List all metadata files.
+        const assetList = await storage.list("metadata");
 
-        const assets = await assetsCollection.find(query)
-            .sort({ sortDate: -1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
+        // Get the data from each metadata asset.
+        const assets = await Promise.all(assetList.map(async (assetid) => {
+            const metadataStream = await storage.read("metadata", assetid);
+            const metadataText = await text(metadataStream);
+            const metadata = JSON.parse(metadataText);
+            return metadata;
+        }));
 
         res.json({
             assets: assets,
         });
     });
-
-
-    //
-    // Build the search index for a single asset.
-    //
-    async function updateSearchText(assetId: ObjectId): Promise<void> {
-
-        const asset = await assetsCollection.findOne({ _id: assetId });
-        if (!asset) {
-            // No asset.
-            // console.log(`Can't update search text for asset ${assetId}, asset doesn't exist.`);
-            return;
-        }
-
-        let searchText = "";
-
-        searchText += asset.origFileName + " ";
-
-        if (asset.location) {
-            searchText += " " + asset.location.toLowerCase();
-        }
-
-        if (asset.labels) {
-            for (const label of asset.labels) {
-                searchText += " " + label;
-            }
-        }    
-
-        if (asset.description) {
-            searchText += " " + asset.description;
-        }
-
-        await assetsCollection.updateOne(
-            { _id: assetId },
-            {
-                $set: {
-                    searchText: searchText,
-                },
-            }
-        );
-
-        // console.log(`Updated search text for asset ${assetId} to ${searchText}`);
-    }
 
     return app;
 }

@@ -9,9 +9,17 @@ export class FileStorage implements IStorage {
     // Initialises the storage interface.
     //
     async init(): Promise<void> {
+        await fs.ensureDir("files/metadata");
         await fs.ensureDir("files/original");
         await fs.ensureDir("files/thumb");
         await fs.ensureDir("files/display");
+    }
+
+    //
+    // List files in storage.
+    //
+    list(type: AssetType): Promise<string[]> {
+        return fs.readdir(path.join("files", type));
     }
 
     //
@@ -34,7 +42,6 @@ export class FileStorage implements IStorage {
                     reject(err);
                 })
                 .on("finish", () => {
-                    console.log(`Uplaoded ${localFileName}`); //fio:
                     resolve();
                 });
         });

@@ -8,7 +8,7 @@ export interface IAsset {
     //
     // Unique ID of the asset in the database.
     //
-    _id: ObjectId;
+    _id: string;
 
     //
     // The original name of the asset before it was uploaded.
@@ -84,9 +84,4 @@ export interface IAsset {
     // Description of the asset, once the user has set it.
     //
     description?: string;
-
-    //
-    // Text to search for the asset.
-    //
-    searchText?: string;
 }
