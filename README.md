@@ -1,5 +1,7 @@
 # Photosphere monorepo
 
+An experimental fork of Photosphere that removes the database and stores metadata in S3.
+
 This monorepo contains the backend and frontend for [the Photosphere application](https://rapidfullstackdevelopment.com/example-application).
 
 This code accompanies chapter 6 of the book [Rapid Fullstack Development](https://rapidfullstackdevelopment.com/).
