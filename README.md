@@ -78,3 +78,51 @@ Then, start the frontend. Follow the instructions in [./frontend/README.md](./fr
     - Returns these alpha order. Within this I can sort files in any order.
     - I just need sub directories under "index" like this `${fieldName}-${ascending|descending}`.
 
+
+## Managing buckets
+
+- Need to maintain a separate list that tracks the extents of the values of fields on records in the database.
+- The bucket extends map is an array where each record shows you the starting values for the first record in each bucket.
+- Buckets should be very simple text files.
+    - Don't want any complicated parsing.
+    - Just split by new lines.
+    - Each record is two lines, first line for the id and second line for the sort value. If the sort value contains new lines those new lines will have to be extracted.   
+
+```typescript
+//
+// Assuming there are X buckets where the starting values of each bucket are 
+// recorded in the "bucket extends map" we can find which bucket a 
+// values belongs in.
+//
+// Once we know the bucket we load that bucket and insert the 
+// record at the correct location.
+//
+// !! This assumes that the value be sorted on is stored in the bucket.
+//    Each recored in the bucket needs the _id and the field that is 
+//    being sorted on. This will increase the memory requirements 
+//    of each bucket.
+//
+function findBucketIndex<ValueT>(
+    newValue: ValueT, 
+    fieldName: string, 
+    compare: (a: ValueT, b: ValueT) => boolean
+    ): Promise<string> {
+    const bucketExtentsMap = await loadBucketExtentsMap(); // An array of records (This could be generated from the buckets and cached in memory).
+
+    let bucketIndex = 0;
+
+    while (bucketIndex < bucketExtentsMap.length) {
+        if (compare(newValue, bucketExtentsMap[bucketIndex]))}
+            // Move to next bucket.
+            bucketIndex += 1; //todo: have we finished yet?
+        }
+        else {
+            // Found the bucket that should contain the value.
+            break;
+        }     
+    }
+
+    return bucketIndex;
+}
+```
+
