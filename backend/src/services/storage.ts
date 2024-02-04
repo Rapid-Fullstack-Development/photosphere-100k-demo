@@ -1,7 +1,7 @@
 import { Asset } from "aws-sdk/clients/codeartifact";
 import { Readable } from "stream";
 
-export type AssetType = "metadata" | "thumb" | "display" | "original";
+export type AssetType = "index" | "metadata" | "thumb" | "display" | "original";
 
 //
 // Information about an asset.

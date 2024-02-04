@@ -74,4 +74,7 @@ Then, start the frontend. Follow the instructions in [./frontend/README.md](./fr
     - A file system db.
     - An s3 db.
 - The client can read the entire sorted list page by page, then generate a search index in the browser.
+- Storing files like a.txt, aa.txt, b.txt, z.txt.
+    - Returns these alpha order. Within this I can sort files in any order.
+    - I just need sub directories under "index" like this `${fieldName}-${ascending|descending}`.
 
