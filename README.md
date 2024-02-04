@@ -30,6 +30,8 @@ Then, start the frontend. Follow the instructions in [./frontend/README.md](./fr
 
 ## Questions
 
+- Deploy this and upload 100k assets.
+
 - It would be much faster if we didn't have to look up the content type from metadata before returning the asset.
 - Is enumerating all assets expensive?
     - Do I need to paginate still?
@@ -42,6 +44,7 @@ Then, start the frontend. Follow the instructions in [./frontend/README.md](./fr
     - Should the hash be the ID?
     - Otherwise I could have a json file per hash that links to the assets that have that hash (should usually be one!)
 - add-label, remove-label and set-descrition can be replaced with a general purpose api to update nested fields in metadata.
+- Is there anyway to get a stable sort from s3?
 
 
 

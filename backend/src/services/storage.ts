@@ -3,6 +3,21 @@ import { Readable } from "stream";
 
 export type AssetType = "metadata" | "thumb" | "display" | "original";
 
+//
+// Information about an asset.
+//
+export interface IAssetInfo {
+    //
+    // The content type of the asset.
+    //
+    contentType: string;
+
+    //
+    // The length of the asset in bytes.
+    //
+    length: number;
+}
+
 export interface IStorage {
 
     //
@@ -14,6 +29,11 @@ export interface IStorage {
     // List files in storage.
     //
     list(type: AssetType): Promise<string[]>;
+
+    //
+    // Gets info about an asset.
+    //
+    info(type: AssetType, assetId: string): Promise<IAssetInfo>;
     
     //
     // Reads an file from stroage.

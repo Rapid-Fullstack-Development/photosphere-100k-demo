@@ -1,4 +1,4 @@
-import { AssetType, IStorage } from "./storage";
+import { AssetType, IAssetInfo, IStorage } from "./storage";
 import { Readable } from "stream";
 import aws from "aws-sdk";
 
@@ -55,6 +55,21 @@ export class CloudStorage implements IStorage {
                 return object.Key?.split("/")[1] as string;
             }) ?? [];
         });
+    }
+
+    //
+    // Gets info about an asset.
+    //
+    async info(type: AssetType, assetId: string): Promise<IAssetInfo> {
+        const headParams: aws.S3.Types.HeadObjectRequest = {
+            Bucket: this.bucket,
+            Key: `${type}/${assetId}`,
+        };
+        const headResult = await this.s3.headObject(headParams).promise();
+        return {
+            contentType: headResult.ContentType as string,
+            length: headResult.ContentLength as number,
+        };
     }
 
     //

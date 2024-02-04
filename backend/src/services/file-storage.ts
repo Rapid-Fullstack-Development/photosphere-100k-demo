@@ -1,6 +1,6 @@
 import * as fs from "fs-extra";
 import * as path from "path";
-import { AssetType, IStorage } from "./storage";
+import { AssetType, IAssetInfo, IStorage } from "./storage";
 import { Readable } from "stream";
 
 export class FileStorage implements IStorage {
@@ -23,11 +23,36 @@ export class FileStorage implements IStorage {
     }
 
     //
+    // Determines the local file name for an asset.
+    //
+    getLocalFileName(type: AssetType, assetId: string): string {
+        return path.join("files", type, assetId);
+    }
+
+    //
+    // Determines the local info file for an asset.
+    //    
+    getInfoFileName(type: AssetType, assetId: string): string {
+        return path.join(this.getLocalFileName(type, assetId), `.info`);
+    }
+
+    //
+    // Gets info about an asset.
+    //
+    async info(type: AssetType, assetId: string): Promise<IAssetInfo> {
+        const info = JSON.parse(await fs.readFile(this.getInfoFileName(type, assetId), "utf8"));
+        const stat = await fs.stat(this.getLocalFileName(type, assetId));
+        return {
+            contentType: info.contentType,
+            length: stat.size,
+        };
+    }
+
+    //
     // Reads an file from stroage.
     //
     read(type: AssetType, assetId: string): Readable {
-        const localFileName = path.join("files", type, assetId);
-        return fs.createReadStream(localFileName);
+        return fs.createReadStream(this.getLocalFileName(type, assetId));
     }
 
     //
@@ -35,15 +60,22 @@ export class FileStorage implements IStorage {
     //
     write(type: AssetType, assetId: string, contentType: string, inputStream: Readable): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            const localFileName = path.join("files", type, assetId);
-            const fileWriteStream = fs.createWriteStream(localFileName);
-            inputStream.pipe(fileWriteStream)
-                .on("error", (err: any) => {
-                    reject(err);
-                })
-                .on("finish", () => {
-                    resolve();
-                });
+            fs.writeFile(this.getInfoFileName(type, assetId), JSON.stringify({
+                contentType: contentType,
+            }, null, 4))
+            .then(() => {
+                const fileWriteStream = fs.createWriteStream(this.getLocalFileName(type, assetId));
+                inputStream.pipe(fileWriteStream)
+                    .on("error", (err: any) => {
+                        reject(err);
+                    })
+                    .on("finish", () => {
+                        resolve();
+                    });
+            })
+            .catch((err) => {
+                reject(err);
+            });
         });
     }
 }

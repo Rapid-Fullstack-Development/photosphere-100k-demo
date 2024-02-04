@@ -174,10 +174,10 @@ export async function createServer(now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const metadata = await readMetadata(assetId);
+        const assetInfo = await storage.info("original", assetId);
 
         res.writeHead(200, {
-            "Content-Type": metadata.assetContentType,
+            "Content-Type": assetInfo.contentType,
         });
 
         const stream = storage.read("original", assetId);
@@ -209,13 +209,13 @@ export async function createServer(now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const metadata = await readMetadata(assetId);
+        const assetInfo = await storage.info("thumb", assetId);
 
         //
         // Return the thumbnail.
         //
         res.writeHead(200, {
-            "Content-Type": metadata.thumbContentType,
+            "Content-Type": assetInfo.contentType,
         });
 
         const stream = await storage.read("thumb", assetId);
@@ -247,13 +247,13 @@ export async function createServer(now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const metadata = await readMetadata(assetId);
+        const assetInfo = await storage.info("display", assetId);
 
         //
         // Return the display version of the asset.
         //
         res.writeHead(200, {
-            "Content-Type": metadata.displayContentType,
+            "Content-Type": assetInfo.contentType,
         });
 
         const stream = await storage.read("display", assetId);
