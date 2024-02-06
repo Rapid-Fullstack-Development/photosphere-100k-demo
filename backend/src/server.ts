@@ -355,23 +355,6 @@ export async function createServer(now: () => Date, storage: IStorage) {
         });
     });
 
-    //
-    // Add test files for sorted assets.
-    //
-    // await storage.write("index", "z.txt", "application/json", Readable.from("10,11,12"));
-    // await storage.write("index", "a.txt", "application/json", Readable.from("1,2,3"));
-    // await storage.write("index", "c.txt", "application/json", Readable.from("7,8,9"));
-    // await storage.write("index", "b.txt", "application/json", Readable.from("4,5,6"));
-
-    await storage.write("index", "cz.txt", "application/json", Readable.from("7,8,9"));
-    await storage.write("index", "aa.txt", "application/json", Readable.from("1,2,3"));
-    await storage.write("index", "za.txt", "application/json", Readable.from("10,11,12"));
-    await storage.write("index", "ab.txt", "application/json", Readable.from("1,2,3"));
-    await storage.write("index", "ca.txt", "application/json", Readable.from("7,8,9"));
-
-    const l = await storage.list("index");
-    console.log(l); //fio:
-
     return app;
 }
 
