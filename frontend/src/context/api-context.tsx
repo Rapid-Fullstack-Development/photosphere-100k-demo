@@ -13,6 +13,21 @@ if (!BASE_URL) {
 
 console.log(`Expecting backend at ${BASE_URL}.`);
 
+//
+// Results from getting assets.
+//
+export interface IAssetsResult {
+    //
+    // The assets returned.
+    //
+    assets: IGalleryItem[];
+
+    //
+    // Identifies the next page of results, if any.
+    //
+    next?: string;
+}
+
 export interface IApiContext {
 
     //
@@ -23,7 +38,7 @@ export interface IApiContext {
     //
     // Retreives the list of assets from the backend.
     //
-    getAssets(search: string | undefined, skip: number, limit: number): Promise<IGalleryItem[]>;
+    getAssets(next?: string): Promise<IAssetsResult>;
 
     //
     // Check if an asset is already uploaded using its hash.
@@ -125,11 +140,8 @@ export function ApiContextProvider({ children }: IProps) {
     //
     // Retreives the list of assets from the backend.
     //
-    async function getAssets(search: string | undefined, skip: number, limit: number): Promise<IGalleryItem[]> {
-        let url = `${BASE_URL}/assets?skip=${skip}&limit=${limit}`;
-        if (search && search.length > 0) {
-            url += `&search=${search}`;
-        }
+    async function getAssets(next?: string): Promise<IAssetsResult> {
+        let url = `${BASE_URL}/assets?next=${next}`;
 
         const apiKey = await getApiKey();
         const { data } = await axios.get(
@@ -147,7 +159,7 @@ export function ApiContextProvider({ children }: IProps) {
             asset.group = dayjs(asset.sortDate).format("MMM, YYYY")
         }
 
-        return assets;
+        return data;
     }
 
     //

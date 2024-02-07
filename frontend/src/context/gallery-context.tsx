@@ -1,8 +1,6 @@
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { createContext, ReactNode, useContext, useRef, useState } from "react";
 import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
-
-const NUM_ASSETS_PER_PAGE = 100;
 
 export interface IGalleryContext {
 
@@ -10,16 +8,6 @@ export interface IGalleryContext {
     // The assets currently loaded.
     //
     assets: IGalleryItem[];
-
-    //
-    // The number of pages loaded.
-    //
-    pagesLoaded: number;
-
-    //
-    // Set to true if there are more assets that can be loaded.
-    //
-    haveMoreAssets: boolean;
 
     //
     // Adds an asset to the gallery.
@@ -34,7 +22,7 @@ export interface IGalleryContext {
     //
     // Loads the requested page of the gallery.
     //
-    loadPage(pageNumber: number): Promise<void>;
+    loadPage(): Promise<void>;
 
     //
     // Resets the gallery to the initial condition.
@@ -96,6 +84,11 @@ export function GalleryContextProvider({ children }: IProps) {
     const api = useApi();
 
     //
+    // The next page to load.
+    //
+    const nextRef = useRef<string | undefined>(undefined);
+
+    //
     // Assets that have been loaded from the backend.
     //
     const [ assets, setAssets ] = useState<IGalleryItem[]>([]);
@@ -104,16 +97,6 @@ export function GalleryContextProvider({ children }: IProps) {
     // The current search that has been executed.
     //
     const [ searchText, setSearchText ] = useState<string>("");
-
-    //
-    // Records the number of pages loaded so far.
-    //
-    const [ pagesLoaded, setPagesLoaded ] = useState<number>(0);
-
-    //
-    // Set to true when there's more assets to load.
-    //
-    const [ haveMoreAssets, setHaveMoreAssets ] = useState<boolean>(false);
 
     //
     // The item in the gallery that is currently selected.
@@ -131,38 +114,18 @@ export function GalleryContextProvider({ children }: IProps) {
     // Loads the requested page of the gallery.
     // Note: 1-based page numbers.
     //
-    async function loadPage(pageNumber: number): Promise<void> {
+    async function loadPage(): Promise<void> {
+
+        //todo: make use of 'searchText'
         
-        console.log(`Loading page ${pageNumber}`);
+        const assetsResult = await api.getAssets(nextRef.current);
 
-        if (pageNumber <= pagesLoaded) {
-            console.log(`Page ${pageNumber} is already loaded`);
-            return;
-        }
-
-        const skip = (pageNumber-1) * NUM_ASSETS_PER_PAGE;
-        const limit = NUM_ASSETS_PER_PAGE;
-        setPagesLoaded(pageNumber);
-
-        console.log(`Skipping ${skip}`)
-        console.log(`Limit ${limit}`)
-        
-        const newAssets = await api.getAssets(searchText, skip, limit);
-        if (newAssets.length === 0) {
-            //
-            // Ran out of items to load!
-            //
-            setHaveMoreAssets(false);
-            console.log(`Finished loading assets.`);
-            return;
-        }
+        nextRef.current = assetsResult.next;
 
         //
         // Keep a copy of newly loaded assets.
         //
-        setAssets(assets.concat(newAssets));
-        setHaveMoreAssets(true);
-
+        setAssets(assets.concat(assetsResult.assets));
     }
 
     //
@@ -170,9 +133,7 @@ export function GalleryContextProvider({ children }: IProps) {
     // The current search text remains unchanged.
     //
     async function reset(): Promise<void> {
-        setPagesLoaded(0);
         setAssets([]);
-        setHaveMoreAssets(true);
         clearSelectedItem();
     }    
 
@@ -253,8 +214,6 @@ export function GalleryContextProvider({ children }: IProps) {
 
     const value: IGalleryContext = {
         assets,
-        pagesLoaded,
-        haveMoreAssets,
         addAsset,
         setAssets,
         loadPage,

@@ -3,10 +3,8 @@ import cors from "cors";
 import { IAsset } from "./lib/asset";
 import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
-import { v4 as makeUuid } from "uuid";
 import { Readable } from "stream";
 import { text } from 'node:stream/consumers';
-import { read } from "fs";
 
 const API_KEY = process.env.API_KEY;
 
@@ -79,15 +77,17 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Writes metadata for an asset.
     //
     async function writeMetadata(assetId: string, asset: IAsset): Promise<void> {
-        await storage.write("metadata", assetId + ".json", "application/json", Readable.from(JSON.stringify(asset)));
+        await storage.writeStream("metadata", assetId, "application/json", Readable.from(JSON.stringify(asset, null, 2)));
     }
 
     //
     // Reads metadata for an asset.
     //
     async function readMetadata(assetId: string): Promise<IAsset> {
-        const metadataStream = await storage.read("metadata", assetId + ".json");
-        const metadataText = await text(metadataStream);
+        const metadataText = await storage.read("metadata", assetId);
+        if (!metadataText) {
+            throw new Error(`Asset metadata not found for asset id ${assetId}`);
+        }
         const metadata = JSON.parse(metadataText);
         return metadata;
     }
@@ -102,18 +102,45 @@ export async function createServer(now: () => Date, storage: IStorage) {
     }
 
     //
-    // Uploads metadata for an asset and allocats a new asset id.
+    // Tracks a new hash to an asset id.
+    //
+    async function updateHash(hash: string, assetId: string): Promise<void> {
+        await storage.write("hash", hash, "text/plain", assetId);
+    }
+
+    //
+    // Reads the assetId that is linked to a hash.
+    //
+    async function readHash(hash: string): Promise<string | undefined> {
+        return await storage.read("hash", hash);
+    }
+
+    //
+    // Creates a name that is sorted in reverse chronological order according to the date.
+    // The name essentially counts down to the year 3000.
+    //
+    function generateReverseChronoName(date: Date): string {
+        const futureDate = new Date('3000-12-31T23:59:59Z');
+        const diffInSeconds = Math.floor((futureDate.getTime() - date.getTime()) / 1000);
+        return diffInSeconds.toString().padStart(20, '0');
+    }
+    
+    //
+    // Uploads metadata for an asset and allocates a new asset id.
     //
     app.post("/metadata", express.json(), async (req, res) => {
 
         const metadata = req.body;
-        const assetId = metadata.hash || makeUuid();
         const fileName = getValue<string>(metadata, "fileName");
         const width = getValue<number>(metadata, "width");
         const height = getValue<number>(metadata, "height");
         const hash = getValue<string>(metadata, "hash");
         const fileDate = dayjs(getValue<string>(metadata, "fileDate")).toDate();
         const labels = metadata.labels || [];
+        const photoDate = metadata.photoDate ? dayjs(metadata.photoDate).toDate() : undefined;
+        const uploadDate = now();
+        const sortDate = photoDate || fileDate || uploadDate;
+        const assetId = `${generateReverseChronoName(sortDate)}-${hash || "1"}`;
 
         const newAsset: IAsset = {
             _id: assetId,
@@ -122,8 +149,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
             height: height,
             hash: hash,
             fileDate: fileDate,
-            sortDate: fileDate,
-            uploadDate: now(),
+            photoDate: photoDate,
+            sortDate: sortDate,
+            uploadDate: uploadDate,
             labels: labels,
         };
 
@@ -135,12 +163,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
             newAsset.properties = metadata.properties;
         }
 
-        if (metadata.photoDate) {
-            newAsset.photoDate = dayjs(metadata.photoDate).toDate();
-            newAsset.sortDate = newAsset.photoDate;
-        }
-
         await writeMetadata(assetId, newAsset);
+
+        await updateHash(hash, assetId);
 
         res.json({
             assetId: assetId,
@@ -155,9 +180,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
         const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
         
-        await storage.write("original", assetId.toString(), contentType, req);
+        await storage.writeStream("original", assetId.toString(), contentType, req);
 
-        await updateMetadata(assetId, { assetContentType: contentType });
+        await updateMetadata(assetId, { assetContentType: contentType });3
 
         res.json({
             assetId: assetId,
@@ -180,7 +205,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
             "Content-Type": assetInfo.contentType,
         });
 
-        const stream = storage.read("original", assetId);
+        const stream = storage.readStream("original", assetId);
         stream.pipe(res);
     });
 
@@ -192,7 +217,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
 
-        await storage.write("thumb", assetId.toString(), contentType, req);
+        await storage.writeStream("thumb", assetId.toString(), contentType, req);
 
         await updateMetadata(assetId, { thumbContentType: contentType });
         
@@ -218,7 +243,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
             "Content-Type": assetInfo.contentType,
         });
 
-        const stream = await storage.read("thumb", assetId);
+        const stream = await storage.readStream("thumb", assetId);
         stream.pipe(res);
     });
 
@@ -230,7 +255,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         const assetId = getHeader(req, "id");
         const contentType = getHeader(req, "content-type");
         
-        await storage.write("display", assetId.toString(), contentType, req);
+        await storage.writeStream("display", assetId.toString(), contentType, req);
 
         await updateMetadata(assetId, { displayContentType: contentType });
         
@@ -256,7 +281,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
             "Content-Type": assetInfo.contentType,
         });
 
-        const stream = await storage.read("display", assetId);
+        const stream = await storage.readStream("display", assetId);
         stream.pipe(res);
     });
 
@@ -318,12 +343,13 @@ export async function createServer(now: () => Date, storage: IStorage) {
             throw new Error(`Hash not specified in query parameters.`);
         }
 
-        try {
-            const metadata = await readMetadata(hash);
-            // Success. The hash is the asset id.
-            res.json({ assetId: hash });
+        // Read the hash map.
+        const assetId = await readHash(hash);
+        if (assetId) {
+            // The asset exists.
+            res.json({ assetId: assetId });
         }
-        catch (err) {
+        else {
             // The asset doesn't exist.
             res.json({ assetId: undefined });
         }
@@ -334,24 +360,18 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     app.get("/assets", async (req, res) => {
 
-        //todo: still want this to be paginated!
-        const search = req.query.search as string;
-        const skip = getIntQueryParam(req, "skip");
-        const limit = getIntQueryParam(req, "limit");
-        
-        // List all metadata files.
-        const assetList = await storage.list("metadata");
-
-        // Get the data from each metadata asset.
-        const assets = await Promise.all(assetList.map(async (assetid) => {
-            const metadataStream = await storage.read("metadata", assetid);
-            const metadataText = await text(metadataStream);
-            const metadata = JSON.parse(metadataText);
-            return metadata;
-        }));
+        const next = req.query.next as string;
+        const result = await storage.list("metadata", next);
+        const assets = await Promise.all(result.assetsIds.map(
+            async assetId => { 
+                const data = await storage.read("metadata", assetId);
+                return JSON.parse(data!) as IAsset;
+            },
+        ));
 
         res.json({
             assets: assets,
+            next: result.continuation,
         });
     });
 

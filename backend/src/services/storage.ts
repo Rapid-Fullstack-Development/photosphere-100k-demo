@@ -1,7 +1,19 @@
-import { Asset } from "aws-sdk/clients/codeartifact";
 import { Readable } from "stream";
 
-export type AssetType = "index" | "metadata" | "thumb" | "display" | "original";
+//
+// Partial result of the list operation.
+//
+export interface IListResult {
+    //
+    // The IDs of assets that were found.
+    //
+    assetsIds: string[];
+
+    //
+    // If there are more assets to read the contination token is set.
+    //
+    continuation?: string;
+}
 
 //
 // Information about an asset.
@@ -28,20 +40,31 @@ export interface IStorage {
     //
     // List files in storage.
     //
-    list(type: AssetType): Promise<string[]>;
+    list(type: string, continuationToken?: string): Promise<IListResult>;
 
     //
     // Gets info about an asset.
     //
-    info(type: AssetType, assetId: string): Promise<IAssetInfo>;
+    info(type: string, assetId: string): Promise<IAssetInfo>;
     
     //
-    // Reads an file from stroage.
+    // Reads a file from storage.
+    // Returns undefined if the file doesn't exist.
     //
-    read(type: AssetType, assetId: string): Readable;
+    read(type: string, assetId: string): Promise<string | undefined>;
+
+    //
+    // Writes a file to storage.
+    //
+    write(type: string, assetId: string, contentType: string, data: string): Promise<void>;
+
+    //
+    // Streams a file from stroage.
+    //
+    readStream(type: string, assetId: string): Readable;
 
     //
     // Writes an input stream to storage.
     //
-    write(type: AssetType, assetId: string, contentType: string, inputStream: Readable): Promise<void>;
+    writeStream(type: string, assetId: string, contentType: string, inputStream: Readable): Promise<void>;
 }
