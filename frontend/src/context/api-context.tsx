@@ -141,7 +141,11 @@ export function ApiContextProvider({ children }: IProps) {
     // Retreives the list of assets from the backend.
     //
     async function getAssets(next?: string): Promise<IAssetsResult> {
-        let url = `${BASE_URL}/assets?next=${next}`;
+        let url = `${BASE_URL}/assets`;
+
+        if (next) {
+            url += `?next=${next}`;
+        }
 
         const apiKey = await getApiKey();
         const { data } = await axios.get(
