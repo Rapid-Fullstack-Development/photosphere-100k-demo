@@ -1,5 +1,3 @@
-import { ObjectId } from "mongodb";
-
 //
 // Represents an asset that has been uploaded to the backend.
 //
