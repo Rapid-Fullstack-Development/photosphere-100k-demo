@@ -1,9 +1,13 @@
 import { createServer } from "../server";
 import * as fs from "fs-extra";
 import request from "supertest";
-import { ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import { Readable } from "stream";
+
+class ObjectId {
+    constructor(id?: string) {
+    }
+}
 
 describe("photosphere backend", () => {
 
@@ -54,7 +58,7 @@ describe("photosphere backend", () => {
             },
         };
 
-        const app = await createServer(mockDb, () => dateNow, mockStorage);
+        const app = await createServer(() => dateNow, mockStorage);
         return { 
             app, 
             mockCollection, 
