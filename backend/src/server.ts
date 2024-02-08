@@ -3,9 +3,9 @@ import cors from "cors";
 import { IAsset } from "./lib/asset";
 import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
-import { Readable } from "stream";
-import { text } from 'node:stream/consumers';
 import { generateReverseChronoName } from "./lib/gen-name";
+import "./lib/populate-test-assets";
+import { exportUploadTestAssets } from "./lib/populate-test-assets";
 
 const API_KEY = process.env.API_KEY;
 
@@ -20,7 +20,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
     app.use(cors());
 
     if (API_KEY) {
-        //
+        //"
         // Authenticates with an API key.
         // All routes after this must provide the API key.
         //
@@ -78,7 +78,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Writes metadata for an asset.
     //
     async function writeMetadata(assetId: string, asset: IAsset): Promise<void> {
-        await storage.writeStream("metadata", assetId, "application/json", Readable.from(JSON.stringify(asset, null, 2)));
+        await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
     }
 
     //
@@ -173,7 +173,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         
         await storage.writeStream("original", assetId.toString(), contentType, req);
 
-        await updateMetadata(assetId, { assetContentType: contentType });3
+        await updateMetadata(assetId, { assetContentType: contentType });
 
         res.json({
             assetId: assetId,
@@ -365,6 +365,8 @@ export async function createServer(now: () => Date, storage: IStorage) {
             next: result.continuation,
         });
     });
+
+    exportUploadTestAssets(storage);
 
     return app;
 }
