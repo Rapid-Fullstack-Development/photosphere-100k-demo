@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
 import { Readable } from "stream";
 import { text } from 'node:stream/consumers';
+import { generateReverseChronoName } from "./lib/gen-name";
 
 const API_KEY = process.env.API_KEY;
 
@@ -115,16 +116,6 @@ export async function createServer(now: () => Date, storage: IStorage) {
         return await storage.read("hash", hash);
     }
 
-    //
-    // Creates a name that is sorted in reverse chronological order according to the date.
-    // The name essentially counts down to the year 3000.
-    //
-    function generateReverseChronoName(date: Date): string {
-        const futureDate = new Date('3000-12-31T23:59:59Z');
-        const diffInSeconds = Math.floor((futureDate.getTime() - date.getTime()) / 1000);
-        return diffInSeconds.toString().padStart(20, '0');
-    }
-    
     //
     // Uploads metadata for an asset and allocates a new asset id.
     //
