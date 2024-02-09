@@ -27,12 +27,40 @@ function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+//
+// Photos already uploaded.
+//
 let assetUploads = 0;
+
+//
+// 
+// 
+async function countAssets(storage: IStorage): Promise<number> {
+    let count = 0;
+    let continuation = undefined;
+
+    while (true) {
+        const result = await storage.list("metadata", continuation);
+        count += result.assetsIds.length;
+        if (result.continuation) {
+            continuation = result.continuation;
+        }
+        else {
+            break;
+        }
+    }
+
+    return count;    
+}
 
 //
 // Download photos in batches.
 //
 export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
+
+    assetUploads = await countAssets(storage);
+
+    console.log(`!!! Starting with ${assetUploads} assets.`);
     
     while (assetUploads < NUM_PHOTOS) {
         try {
