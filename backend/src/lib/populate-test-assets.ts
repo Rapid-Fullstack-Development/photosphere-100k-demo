@@ -16,7 +16,8 @@ if (!UNSPLASH_ACCESS_KEY) {
 const BASE_URL = "https://api.unsplash.com";
 const NUM_PHOTOS = 100_000;
 const MAX_BATCH = 30;
-const RANDOM_PHOTO_URL = `${BASE_URL}/photos/random?client_id=${UNSPLASH_ACCESS_KEY}&count=${MAX_BATCH}`;
+// const RANDOM_PHOTO_URL = `${BASE_URL}/photos/random?client_id=${UNSPLASH_ACCESS_KEY}&count=${MAX_BATCH}`;
+
 
 async function streamUrl(fileUrl: string) {
     const { data } = await axios({ method: "get", url: fileUrl, responseType: "stream" });
@@ -60,11 +61,15 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
 
     assetUploads = await countAssets(storage);
 
+    let page = Math.ceil(assetUploads / MAX_BATCH);
+
     console.log(`!!! Starting with ${assetUploads} assets.`);
-    
+
     while (assetUploads < NUM_PHOTOS) {
         try {
-            await uploadBatch(storage);
+            await uploadBatch(storage, page);
+
+            page += 1;
         }
         catch (err) {
             console.error(`!!! Error uploading assets:\n${err}.\nWaiting an hour...`);
@@ -78,20 +83,23 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
     console.log(`!!! Done. Uploaded ${assetUploads} assets.`);
 }
 
-async function uploadBatch(storage: IStorage): Promise<void> {
+async function uploadBatch(storage: IStorage, page: number): Promise<void> {
 
-    const { data } = await axios.get(RANDOM_PHOTO_URL);
+    const url = `${BASE_URL}/photos?client_id=${UNSPLASH_ACCESS_KEY}&page=${page}&per_page=${MAX_BATCH}`;
+    const { data } = await axios.get(url);
+
     // await Promise.all(data.map((photo: any) => uploadAsset(photo, storage)));
-    console.log(`Uploaded ${assetUploads} of ${NUM_PHOTOS} assets.`);
 
     for (const photo of data) {
-        await uploadAsset(photo, storage);
-
-        assetUploads += 1;
+        if (await uploadAsset(photo, storage)) {
+            assetUploads += 1;
+        }
     }
+
+    console.log(`Uploaded ${assetUploads} of ${NUM_PHOTOS} assets.`);
 }
 
-async function uploadAsset(photo: any, storage: IStorage) {
+async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
 
     const thumb = photo.urls.thumb;
     const hash = photo.id; // Fake the hash.
@@ -101,6 +109,16 @@ async function uploadAsset(photo: any, storage: IStorage) {
     const height = photo.height;
     const uploadDate = new Date();
     const assetId = `${generateReverseChronoName(sortDate)}-${hash || "1"}`;
+
+    //
+    // See if the asset already exists.
+    //
+    const existing = await storage.read("metadata", assetId);
+
+    if (existing) {
+        // console.log(`Asset ${assetId} already exists.`);
+        return false;
+    }
 
     const asset: IAsset = {
         _id: assetId,
@@ -134,5 +152,7 @@ async function uploadAsset(photo: any, storage: IStorage) {
     await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(thumb));
 
     // console.log(`Uploaded ${assetId}`);
+
+    return true;
 }
 
