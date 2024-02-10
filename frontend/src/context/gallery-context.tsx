@@ -1,6 +1,7 @@
 import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
+import flexsearch from "flexsearch";
 
 export interface IGalleryContext {
 
@@ -23,6 +24,11 @@ export interface IGalleryContext {
     // The current search text.
     //
     searchText: string;
+
+    //
+    // Assets that have been found by a search.
+    //
+    searchedAssets: IGalleryItem[];
 
     //
     // Search for assets based on text input.
@@ -84,15 +90,35 @@ export function GalleryContextProvider({ children }: IProps) {
     const [ searchText, setSearchText ] = useState<string>("");
 
     //
+    // Assets found by a search.
+    //
+    const [ searchedAssets, setSearchedAssets ] = useState<IGalleryItem[]>([]);
+
+    //
     // The item in the gallery that is currently selected.
     //
     const [selectedItem, setSelectedItem] = useState<ISelectedGalleryItem | undefined>(undefined);
+
+    //
+    // References the search index.
+    //
+    const searchIndexRef = useRef<flexsearch.Document<IGalleryItem, true> | undefined>(undefined);
 
     //
     // Load all assets into memory.
     // I want to learn if it's possible for this web page to handle 100k assets all loaded at once.
     //
     async function loadAllAssets(): Promise<void> {
+
+        const searchIndex = new flexsearch.Document<IGalleryItem, true>({
+            document: {
+                id: "_id",
+                index: [ "description" ],
+                store: true, //todo: More expensive on memory?
+            },
+        });
+        searchIndexRef.current = searchIndex;
+
         let continuation: string | undefined = undefined;
         let loadedAssets: IGalleryItem[] = [];
 
@@ -104,6 +130,10 @@ export function GalleryContextProvider({ children }: IProps) {
             //
             loadedAssets = loadedAssets.concat(assetsResult.assets);
             setAssets(loadedAssets);
+
+            for (const asset of assetsResult.assets) {
+                searchIndex.add(asset);
+            }
 
             if (assetsResult.next === undefined) {
                 // Done.
@@ -151,6 +181,24 @@ export function GalleryContextProvider({ children }: IProps) {
         }
 
         setSearchText(newSearchText);
+
+        if (newSearchText === "") {
+            // No search.
+            setSearchedAssets(assets);
+            return;
+        }
+
+        const searchResult = searchIndexRef.current!.search(newSearchText, { enrich: true });
+        
+        const searchedAssets: IGalleryItem[] = [];
+
+        for (const item of searchResult) {
+            for (const result of item.result) {
+                searchedAssets.push((result as any).doc); //todo: cast
+            }
+        }
+
+        setSearchedAssets(searchedAssets);
     }
 
     //
@@ -213,6 +261,7 @@ export function GalleryContextProvider({ children }: IProps) {
         addAsset,
         setAssets,
         searchText,
+        searchedAssets,
         search,
         clearSearch,
         getPrev,
@@ -239,4 +288,3 @@ export function useGallery(): IGalleryContext {
     }
     return context;
 }
-

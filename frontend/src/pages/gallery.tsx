@@ -19,26 +19,38 @@ export function GalleryPage({ onItemClick }: IGalleryPageProps) {
     //
     // The interface to the gallery.
     //
-    const { assets } = useGallery();
+    const { assets, searchText, searchedAssets } = useGallery();
 
     const [ displayedAssets, setDisplayedAssets ] = useState<IGalleryItem[]>([]);
     const [ haveMoreAssets, setHaveMoreAssets ] = useState(true);
 
     useEffect(() => {
-        if (assets.length > 0 && displayedAssets.length === 0) {
-            // Load first page.
+
+        if (searchText === "" && displayedAssets.length === 0) {
+            // Load first page when no assets are yet displayed.
             setDisplayedAssets(assets.slice(0, PAGE_SIZE));
-            console.log(`Loaded ${assets.slice(0, PAGE_SIZE).length} assets`); //fio:
         }
+
     }, [ assets ]);
 
+    useEffect(() => {
+
+        // Load first page when no assets are yet displayed.
+        setDisplayedAssets(searchedAssets.slice(0, PAGE_SIZE));
+
+    }, [ searchedAssets ]);
+
+    //
+    // Loads the next page of assets.
+    //
     function loadPage(page: number): void {
-        if (displayedAssets.length < assets.length) {
+        const assetsToLoad = searchText === "" ? assets : searchedAssets;
+
+        if (displayedAssets.length < assetsToLoad.length) {
             // Add more assets.
             const start = displayedAssets.length;
-            const end = Math.min(start + PAGE_SIZE, assets.length);
-            const newAssets = displayedAssets.concat(assets.slice(start, end));
-            console.log(`Loaded ${newAssets.length} assets`); //fio:
+            const end = Math.min(start + PAGE_SIZE, assetsToLoad.length);
+            const newAssets = displayedAssets.concat(assetsToLoad.slice(start, end));
             setDisplayedAssets(newAssets);
         }
         else {
