@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Gallery } from "../components/gallery";
-import { ISelectedGalleryItem } from "../lib/gallery-item";
+import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import InfiniteScroll from "react-infinite-scroller";
 import { useGallery } from "../context/gallery-context";
 
+const PAGE_SIZE = 1000;
 const INFINITE_SCROLL_THRESHOLD = 200;
 
 export interface IGalleryPageProps {
@@ -18,18 +19,33 @@ export function GalleryPage({ onItemClick }: IGalleryPageProps) {
     //
     // The interface to the gallery.
     //
-    const { assets, loadPage, haveMoreAssets } = useGallery();
+    const { assets } = useGallery();
+
+    const [ displayedAssets, setDisplayedAssets ] = useState<IGalleryItem[]>([]);
+    const [ haveMoreAssets, setHaveMoreAssets ] = useState(true);
 
     useEffect(() => {
-        // 
-        // Loads the first page of the gallery on mount.
-        //
-        loadPage(1)
-            .catch(err => {
-                console.error(`Failed to load gallery:`);
-                console.error(err);
-            });
-    }, []);
+        if (assets.length > 0 && displayedAssets.length === 0) {
+            // Load first page.
+            setDisplayedAssets(assets.slice(0, PAGE_SIZE));
+            console.log(`Loaded ${assets.slice(0, PAGE_SIZE).length} assets`); //fio:
+        }
+    }, [ assets ]);
+
+    function loadPage(page: number): void {
+        if (displayedAssets.length < assets.length) {
+            // Add more assets.
+            const start = displayedAssets.length;
+            const end = Math.min(start + PAGE_SIZE, assets.length);
+            const newAssets = displayedAssets.concat(assets.slice(start, end));
+            console.log(`Loaded ${newAssets.length} assets`); //fio:
+            setDisplayedAssets(newAssets);
+        }
+        else {
+            // No more assets to load.
+            setHaveMoreAssets(false);
+        }
+    }
 
     return (
         <div 
@@ -45,7 +61,7 @@ export function GalleryPage({ onItemClick }: IGalleryPageProps) {
                 getScrollParent={() => document.getElementById("gallery")}
                 >
 		        <Gallery 
-		            items={assets}
+		            items={displayedAssets}
 		            onItemClick={onItemClick}
 		            targetRowHeight={150}
 		            />

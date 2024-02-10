@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useRef, useState } from "react";
+import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
 
@@ -18,16 +18,6 @@ export interface IGalleryContext {
     // Sets the assets currently loaded.
     //
     setAssets(assets: IGalleryItem[]): void;
-
-    //
-    // Loads the requested page of the gallery.
-    //
-    loadPage(): Promise<void>;
-
-    //
-    // Resets the gallery to the initial condition.
-    //
-    reset(): Promise<void>;
 
     //
     // The current search text.
@@ -84,11 +74,6 @@ export function GalleryContextProvider({ children }: IProps) {
     const api = useApi();
 
     //
-    // The next page to load.
-    //
-    const nextRef = useRef<string | undefined>(undefined);
-
-    //
     // Assets that have been loaded from the backend.
     //
     const [ assets, setAssets ] = useState<IGalleryItem[]>([]);
@@ -104,38 +89,50 @@ export function GalleryContextProvider({ children }: IProps) {
     const [selectedItem, setSelectedItem] = useState<ISelectedGalleryItem | undefined>(undefined);
 
     //
+    // Load all assets into memory.
+    // I want to learn if it's possible for this web page to handle 100k assets all loaded at once.
+    //
+    async function loadAllAssets(): Promise<void> {
+        let continuation: string | undefined = undefined;
+        let loadedAssets: IGalleryItem[] = [];
+
+        while (true) {
+            const assetsResult = await api.getAssets(continuation);
+
+            //
+            // Keep a copy of newly loaded assets.
+            //
+            loadedAssets = loadedAssets.concat(assetsResult.assets);
+            setAssets(loadedAssets);
+
+            if (assetsResult.next === undefined) {
+                // Done.
+                break;
+            }
+
+            continuation = assetsResult.next;
+        }
+
+        console.log(`Loaded ${loadedAssets.length} assets in total.`);
+    }
+
+    //
+    // Loads all assets on mount.
+    //
+    useEffect(() => {
+        loadAllAssets()
+            .catch((error) => {
+                console.error(`Failed to load all assets:`);
+                console.error(error);
+            });
+    }, []);
+
+    //
     // Adds an asset to the gallery.
     //
     function addAsset(asset: IGalleryItem): void {
         setAssets([ asset, ...assets ]);
     }
-
-    //
-    // Loads the requested page of the gallery.
-    // Note: 1-based page numbers.
-    //
-    async function loadPage(): Promise<void> {
-
-        //todo: make use of 'searchText'
-        
-        const assetsResult = await api.getAssets(nextRef.current);
-
-        nextRef.current = assetsResult.next;
-
-        //
-        // Keep a copy of newly loaded assets.
-        //
-        setAssets(assets.concat(assetsResult.assets));
-    }
-
-    //
-    // Resets the gallery to the initial condition.
-    // The current search text remains unchanged.
-    //
-    async function reset(): Promise<void> {
-        setAssets([]);
-        clearSelectedItem();
-    }    
 
     //
     // Sets the search text for finding assets.
@@ -154,7 +151,6 @@ export function GalleryContextProvider({ children }: IProps) {
         }
 
         setSearchText(newSearchText);
-        await reset();
     }
 
     //
@@ -216,8 +212,6 @@ export function GalleryContextProvider({ children }: IProps) {
         assets,
         addAsset,
         setAssets,
-        loadPage,
-        reset,
         searchText,
         search,
         clearSearch,
