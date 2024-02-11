@@ -61,9 +61,9 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
 
     assetUploads = await countAssets(storage);
 
-    let page = Math.ceil(assetUploads / MAX_BATCH);
+    let page = 100 + Math.ceil(assetUploads / MAX_BATCH);
 
-    console.log(`!!! Starting with ${assetUploads} assets.`);
+    console.log(`!!! Starting with ${assetUploads} assets. Starting at page ${page}.`);
 
     while (assetUploads < NUM_PHOTOS) {
         try {
@@ -116,7 +116,7 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
     const existing = await storage.read("metadata", assetId);
 
     if (existing) {
-        // console.log(`Asset ${assetId} already exists.`);
+        console.log(`Asset ${assetId} already exists.`);
         return false;
     }
 
