@@ -65,8 +65,13 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
     const initialAssets = await countAssets(storage);
     assetUploads = initialAssets;
 
+    console.log(`!!! Starting with ${assetUploads} assets.`);
+
+    let oneHourInMs = 1000 * 60 * 60;
+   await sleep(oneHourInMs);
+
     let requests = 0;
-    let page = 2;
+    let page = 202;
 
     console.log(`!!! Starting with ${assetUploads} assets. Starting at page ${page}.`);
 
@@ -125,8 +130,8 @@ async function uploadBatch(storage: IStorage, page: number): Promise<void> {
 //
 function getRandomDate(): Date {
     const today = new Date();
-    const fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
-    const randomTime = fiveYearsAgo.getTime() + Math.random() * (today.getTime() - fiveYearsAgo.getTime());
+    const distantPast = new Date(today.getFullYear() - 20, today.getMonth(), today.getDate());
+    const randomTime = distantPast.getTime() + Math.random() * (today.getTime() - distantPast.getTime());
     const randomDate = new Date(randomTime);
     return randomDate;
 } 
@@ -160,10 +165,10 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
         return false;
     }
     else {
-        console.log(`Uploading ${assetId}`);
+        // console.log(`Uploading ${assetId}`);
     }
 
-    console.log(`Date ${dayjs(sortDate).format("YYYY-MM-DD HH:mm:ss")}`);
+    // console.log(`Date ${dayjs(sortDate).format("YYYY-MM-DD HH:mm:ss")}`);
 
     const asset: IAsset = {
         _id: assetId,
