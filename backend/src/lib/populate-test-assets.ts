@@ -67,17 +67,20 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
 
     console.log(`!!! Starting with ${assetUploads} assets.`);
 
-    let oneHourInMs = 1000 * 60 * 60;
-   await sleep(oneHourInMs);
+    console.error(`!!! Waiting 60 minutes...`);
+    await sleep(1000 * 60 * 60);
 
     let requests = 0;
-    let page = 202;
+    let page = 1;
 
     console.log(`!!! Starting with ${assetUploads} assets. Starting at page ${page}.`);
 
-    while (assetUploads < NUM_PHOTOS) {
+    done: while (assetUploads < NUM_PHOTOS) {
         while (assetUploads < NUM_PHOTOS && requests < 200) {
-            await uploadBatch(storage, page);
+            if (!await uploadBatch(storage, page)) {
+                // No more assetws.
+                break done;
+            }
 
             page += 1;
             requests += 1;
@@ -96,13 +99,16 @@ export async function exportUploadTestAssets(storage: IStorage): Promise<void> {
     console.log(`!!! Done. Uploaded ${assetUploads-initialAssets}. Total assets = ${assetUploads}.`);
 }
 
-async function uploadBatch(storage: IStorage, page: number): Promise<void> {
+async function uploadBatch(storage: IStorage, page: number): Promise<boolean> {
 
     // Unsplash URL.
     // const url = `https://api.unsplash.com/photos?client_id=${UNSPLASH_ACCESS_KEY}&page=${page}&per_page=${MAX_BATCH}`;
 
     // Pexels URL.
-    const url = `https://api.pexels.com/v1/curated?per_page=${MAX_BATCH}&page=${page}`;
+    // const url = `https://api.pexels.com/v1/curated?per_page=${MAX_BATCH}&page=${page}`;
+    // sky, mountains, technology, food, music, science, health, sports, arts, education.
+    const query = "space"; //"ocean"; //"people"; //"travel"; //"business"; //"fashion" //"animals"; //"buildings"; //"nature";
+    const url = `https://api.pexels.com/v1/search?query=${query}&per_page=${MAX_BATCH}&page=${page}`;
 
     const { data } = await axios.get(url, {
         headers: {
@@ -114,6 +120,11 @@ async function uploadBatch(storage: IStorage, page: number): Promise<void> {
 
     console.log(`Getting page ${page} with ${photos.length} assets.`);
 
+    if (photos.length === 0) {
+        console.log(`No more photos.`);
+        return false;
+    }
+
     // await Promise.all(data.map((photo: any) => uploadAsset(photo, storage)));
 
     for (const photo of photos) {
@@ -123,6 +134,8 @@ async function uploadBatch(storage: IStorage, page: number): Promise<void> {
     }
 
     console.log(`Uploaded ${assetUploads} of ${NUM_PHOTOS} assets.`);
+
+    return true;
 }
 
 //
