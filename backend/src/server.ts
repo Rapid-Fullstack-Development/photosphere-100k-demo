@@ -366,7 +366,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         });
     });
 
-    exportUploadTestAssets(storage);
+    // exportUploadTestAssets(storage);
 
     return app;
 }
