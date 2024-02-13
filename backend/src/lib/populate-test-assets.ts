@@ -37,7 +37,7 @@ function sleep(ms: number) {
 let assetUploads = 0;
 
 //
-// 
+// Determines the number of assets in storage.
 // 
 async function countAssets(storage: IStorage): Promise<number> {
     let count = 0;
@@ -55,6 +55,27 @@ async function countAssets(storage: IStorage): Promise<number> {
     }
 
     return count;    
+}
+
+//
+// Enumerate over assets in storage.
+//
+async function* enumerateAssets(storage: IStorage) {
+    let continuation = undefined;
+
+    while (true) {
+        const result = await storage.list("metadata", continuation);
+        for (const assetId of result.assetsIds) {
+            yield assetId;
+        }
+
+        if (result.continuation) {
+            continuation = result.continuation;
+        }
+        else {
+            break;
+        }
+    }
 }
 
 //
@@ -219,3 +240,31 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
     return true;
 }
 
+//
+// Run preprocessing on test assets.
+//
+export async function processTestAssets(storage: IStorage): Promise<void> {
+
+    let count = 0;
+
+    for await (const assetId of enumerateAssets(storage)) {
+        // console.log(assetId);
+        
+        const asset = JSON.parse(await storage.read("metadata", assetId) as string) as IAsset;
+        if (!asset.description) {
+            // console.log(`Missing description for ${assetId}`);
+            // console.log(asset);
+
+            if (asset.properties?.fullData?.alt_description) {
+                console.log(`Adding description for ${assetId}`);
+
+                asset.description = asset.properties.fullData.alt_description;
+                await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+
+                count += 1;
+            }
+        }
+    }   
+
+    console.log(`Processed ${count} assets.`);
+}
