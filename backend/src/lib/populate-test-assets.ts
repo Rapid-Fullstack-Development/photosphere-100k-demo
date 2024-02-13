@@ -246,25 +246,29 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
 export async function processTestAssets(storage: IStorage): Promise<void> {
 
     let count = 0;
+    let totalAssets = 0;
 
     for await (const assetId of enumerateAssets(storage)) {
         // console.log(assetId);
         
         const asset = JSON.parse(await storage.read("metadata", assetId) as string) as IAsset;
         if (!asset.description) {
-            // console.log(`Missing description for ${assetId}`);
-            // console.log(asset);
+            console.log(`Missing description for ${assetId}`);
+            console.log(asset);
 
-            if (asset.properties?.fullData?.alt_description) {
-                console.log(`Adding description for ${assetId}`);
+            // if (asset.properties?.fullData?.alt_description) {
+            //     console.log(`Adding description for ${assetId}`);
 
-                asset.description = asset.properties.fullData.alt_description;
-                await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+            //     asset.description = asset.properties.fullData.alt_description;
+            //     await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
 
-                count += 1;
-            }
+            // }
+
+            count += 1;
         }
+
+        totalAssets += 1;
     }   
 
-    console.log(`Processed ${count} assets.`);
+    console.log(`Found ${count} assets out of ${totalAssets}.`);
 }
