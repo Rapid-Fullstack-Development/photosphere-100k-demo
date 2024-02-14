@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
 import { generateReverseChronoName } from "./lib/gen-name";
 import "./lib/populate-test-assets";
-import { exportUploadTestAssets, processTestAssets } from "./lib/populate-test-assets";
+import { exportUploadTestAssets, processTestAssets, tagAssets } from "./lib/populate-test-assets";
 
 const API_KEY = process.env.API_KEY;
 
@@ -370,6 +370,8 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // exportUploadTestAssets(storage);
 
     // processTestAssets(storage);
+
+    // await tagAssets(storage);
 
     return app;
 }

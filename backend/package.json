@@ -38,6 +38,7 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
+        "@azure/cognitiveservices-computervision": "^8.2.0",
         "aws-sdk": "^2.1313.0",
         "axios": "^1.6.7",
         "cors": "^2.8.5",

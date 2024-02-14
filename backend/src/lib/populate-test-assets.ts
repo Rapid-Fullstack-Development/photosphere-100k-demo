@@ -7,6 +7,9 @@ import dayjs from "dayjs";
 import { generateReverseChronoName } from "./gen-name";
 import { IAsset } from "./asset";
 import { IStorage } from "../services/storage";
+const { ComputerVisionClient } = require('@azure/cognitiveservices-computervision');
+const ApiKeyCredentials = require('@azure/ms-rest-js').ApiKeyCredentials;
+const fs = require('fs');
 
 // const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 // if (!UNSPLASH_ACCESS_KEY) {
@@ -273,4 +276,83 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
     }   
 
     console.log(`Found ${missingDescriptions} assets out of ${totalAssets}. Fixed ${fixedDescriptions} descriptions.`);
+}
+
+//
+// Tag assets using AI.
+//
+export async function tagAssets(storage: IStorage) {
+
+    let numTagged = 0;
+    const limit = 5000;
+
+    for await (const assetId of enumerateAssets(storage)) {
+        if (numTagged >= limit) {
+            // Finish up.
+            break;
+        }
+
+        const asset = JSON.parse(await storage.read("metadata", assetId) as string) as IAsset;
+        if (asset.labels === undefined || asset.labels.length === 0) {
+            // console.log(`Tagging for ${assetId}`);
+            // console.log(JSON.stringify(asset, null, 2));
+
+            const result = await tagImage(storage, asset);
+            if (result !== undefined) {
+                asset.labels = result.labels;
+                asset.properties.azureTagging = result.tagging;
+
+                console.log(`Tagged ${assetId} with ${result.labels.join(", ")}`);
+                // console.log(JSON.stringify(asset, null, 2));
+
+                await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+
+                await sleep(3000); // Try to limit to 20 calls per minute.
+
+                numTagged += 1;
+
+                console.log(`Tagged ${numTagged} assets.`);
+            }
+        }        
+    }
+
+    console.log(`Tagged ${numTagged} assets.`);
+}
+
+// Use "az login" to log in to your Azure account.
+// Replace "<your-endpoint>" with your Computer Vision endpoint URL
+// Replace "<your-computer-vision-subscription-key>" with your subscription key
+const key = '008339833a7d4f039ccb91eb3c3e484d';
+const endpoint = 'https://vision-test.cognitiveservices.azure.com/';
+
+const computerVisionClient = new ComputerVisionClient(
+    new ApiKeyCredentials({ inHeader: { 'Ocp-Apim-Subscription-Key': key } }),
+    endpoint
+);
+
+//
+// Gets tags for an image.
+//
+async function tagImage(storage: IStorage, asset: IAsset) {
+
+    const imageUrl = asset.properties.fullData?.src?.medium 
+        || asset.properties.fullData?.urls?.regular;
+
+    if (!imageUrl) {
+        return undefined;
+    }
+
+    const { data } = await axios.get(imageUrl, { responseType: 'stream' });
+    const imageInput = () => data;
+
+    // Analyze the image for tags using the stream
+    const tagsResult = await computerVisionClient.analyzeImageInStream(imageInput, { visualFeatures: ['Tags'] });
+
+    const labels = tagsResult.tags
+        .filter((tag: any) => tag.confidence >= 0.5)
+        .map((tag: any) => tag.name);
+    return {
+        labels,
+        tagging: tagsResult,
+    };
 }
