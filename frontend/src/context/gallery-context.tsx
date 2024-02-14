@@ -111,10 +111,10 @@ export function GalleryContextProvider({ children }: IProps) {
     async function loadAllAssets(): Promise<void> {
 
         const searchIndex = new flexsearch.Document<IGalleryItem, true>({
+            preset: "memory",
             document: {
-                id: "_id",
+                id: "_", // Set when adding a document.
                 index: [ "description" ],
-                store: true, //todo: More expensive on memory?
             },
         });
         searchIndexRef.current = searchIndex;
@@ -125,6 +125,8 @@ export function GalleryContextProvider({ children }: IProps) {
         while (true) {
             const assetsResult = await api.getAssets(continuation);
 
+            let assetIndex = loadedAssets.length;
+
             //
             // Keep a copy of newly loaded assets.
             //
@@ -132,8 +134,12 @@ export function GalleryContextProvider({ children }: IProps) {
             setAssets(loadedAssets);
 
             for (const asset of assetsResult.assets) {
-                searchIndex.add(asset);
+                searchIndex.add(assetIndex, asset);
+
+                assetIndex += 1; // Identify assets by their index in the array.
             }
+
+            console.log(`Added ${assetsResult.assets.length} assets.`);
 
             if (assetsResult.next === undefined) {
                 // Done.
@@ -188,17 +194,19 @@ export function GalleryContextProvider({ children }: IProps) {
             return;
         }
 
-        const searchResult = searchIndexRef.current!.search(newSearchText, { enrich: true });
-        
-        const searchedAssets: IGalleryItem[] = [];
+        const searchResult = searchIndexRef.current!.search(newSearchText);
+        console.log(searchResult);
 
-        for (const item of searchResult) {
-            for (const result of item.result) {
-                searchedAssets.push((result as any).doc); //todo: cast
-            }
-        }
+        // todo: translate search result indexes to assets.
+        // const searchedAssets: IGalleryItem[] = [];
 
-        setSearchedAssets(searchedAssets);
+        // for (const item of searchResult) {
+        //     for (const result of item.result) {
+        //         searchedAssets.push((result as any).doc); //todo: cast
+        //     }
+        // }
+
+        // setSearchedAssets(searchedAssets);
     }
 
     //
