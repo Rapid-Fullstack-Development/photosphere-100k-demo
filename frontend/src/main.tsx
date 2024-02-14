@@ -8,6 +8,7 @@ import { UploadPage } from "./pages/upload";
 import { useGallery } from "./context/gallery-context";
 import { GalleryItemContextProvider } from "./context/gallery-item-context";
 import { useUpload } from "./context/upload-context";
+import FPSStats from "react-fps-stats";
 
 //
 // The main page of the Photosphere app.
@@ -292,6 +293,14 @@ export function Main() {
 		                />
                 </GalleryItemContextProvider>
             }
+
+            <FPSStats 
+                top="auto"
+                left="auto"
+                right={0}
+                bottom={0}
+                />
+
         </>
     );
 }
