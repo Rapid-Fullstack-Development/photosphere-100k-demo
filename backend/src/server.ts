@@ -356,7 +356,8 @@ export async function createServer(now: () => Date, storage: IStorage) {
         const assets = await Promise.all(result.assetsIds.map(
             async assetId => { 
                 const data = await storage.read("metadata", assetId);
-                return JSON.parse(data!) as IAsset;
+                const asset = JSON.parse(data!);
+                return { _id: asset._id, description: asset.description };
             },
         ));
 
