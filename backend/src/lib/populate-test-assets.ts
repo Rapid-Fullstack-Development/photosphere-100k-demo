@@ -245,7 +245,8 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
 //
 export async function processTestAssets(storage: IStorage): Promise<void> {
 
-    let count = 0;
+    let missingDescriptions = 0;
+    let fixedDescriptions = 0;
     let totalAssets = 0;
 
     for await (const assetId of enumerateAssets(storage)) {
@@ -256,19 +257,20 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
             console.log(`Missing description for ${assetId}`);
             console.log(JSON.stringify(asset, null, 2));
 
-            // if (asset.properties?.fullData?.alt_description) {
-            //     console.log(`Adding description for ${assetId}`);
+            if (asset.properties?.fullData?.alt) {
+                console.log(`Adding description for ${assetId}`);
 
-            //     asset.description = asset.properties.fullData.alt_description;
-            //     await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+                asset.description = asset.properties.fullData.alt;
+                await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
 
-            // }
+                fixedDescriptions += 1;
+            }
 
-            count += 1;
+            missingDescriptions += 1;
         }
 
         totalAssets += 1;
     }   
 
-    console.log(`Found ${count} assets out of ${totalAssets}.`);
+    console.log(`Found ${missingDescriptions} assets out of ${totalAssets}. Fixed ${fixedDescriptions} descriptions.`);
 }

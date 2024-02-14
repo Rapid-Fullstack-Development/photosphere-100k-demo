@@ -368,7 +368,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
 
     // exportUploadTestAssets(storage);
 
-    processTestAssets(storage);
+    // processTestAssets(storage);
 
     return app;
 }
