@@ -35,7 +35,7 @@ export interface IImageProps {
     //
     // Index of the image.
     //
-    index: number; //fio:
+    index: number;
 }
 
 //
@@ -91,6 +91,7 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
                         width: `${width}px`,
                         height: `${height}px`,
                         padding: "2px",
+                        // border: "1px solid red",
                     }}
                     onClick={() => {
                         if (onClick) {
@@ -105,11 +106,13 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
                     position: "absolute",
                     left: `${x}px`,
                     top: `${y}px`,
-                    width: `${width}px`,
-                    height: `${height}px`,                    
+                    margin: "2px",
                     padding: "2px",
-                    color: "red",
+                    color: "white",
+                    backgroundColor: "black",
                     pointerEvents: "none",
+                    fontSize: "12px",
+                    lineHeight: "14px",
                 }}
                 >
                 #{index+1}
