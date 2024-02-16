@@ -117,7 +117,7 @@ i {
 
 .gallery-thumb {
     opacity: 0;
-    animation: fadeInAnimation 1s ease-in forwards;
+    animation: fadeInAnimation 0.25s ease-in forwards;
 }
 
 @keyframes fadeInAnimation {
