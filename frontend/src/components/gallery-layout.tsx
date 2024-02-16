@@ -116,7 +116,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const { searchText, firstPageLoaded, } = useGallery();
+    const { searchText, firstPageLoaded } = useGallery();
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
     
@@ -157,6 +157,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             style={{
                 overflowY: "auto",
                 height: "100%",
+                position: "relative",
             }}
             >
             <div
@@ -168,6 +169,31 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                 }}
                 >
                 {renderVisibleRange(api, galleryLayout, scrollTop, containerRef.current?.clientHeight, onItemClick)}
+            </div>
+
+            {/* A debug overlay. */}
+            <div
+                style={{
+                    position: "fixed",
+                    bottom: "60px",
+                    right: "30px",
+                    width: "200px",
+                    height: "100px",
+                    color: "black",
+                    backgroundColor: "white",
+                    border: "1px solid black",
+                    padding: "8px",
+                }}
+                >
+                <p>
+                    Debug panel
+                </p>
+                <p>
+                    #rows: {galleryLayout?.rows.length}
+                </p>
+                <p>
+                    #items: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
+                </p>
             </div>
         </div>
     );
