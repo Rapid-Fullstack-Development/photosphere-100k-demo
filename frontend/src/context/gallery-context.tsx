@@ -146,7 +146,7 @@ export function GalleryContextProvider({ children }: IProps) {
 
         let firstPageLoaded = false;
 
-        let maxPages = 3; // Limit the number of pages to load for testing.
+        // let maxPages = 1; // Limit the number of pages to load for testing.
 
         console.log(`== Loading assets...`)
 
@@ -187,10 +187,10 @@ export function GalleryContextProvider({ children }: IProps) {
 
             continuation = assetsResult.next;
 
-            maxPages -= 1;
-            if (maxPages <= 0) { //fio:
-                break;
-            }
+            // maxPages -= 1;
+            // if (maxPages <= 0) {
+            //     break;
+            // }
         }
 
         loadingFinishedRef.current = true;
