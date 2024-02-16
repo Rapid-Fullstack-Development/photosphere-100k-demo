@@ -21,7 +21,7 @@ export interface IGalleryLayout {
 //
 // Creates or updates a row-based layout for items in the gallery.
 //
-export function computePartialLayout(layout: IGalleryLayout | undefined, items: IGalleryItem[], startIndex: number, endIndex: number, galleryWidth: number, targetRowHeight: number): IGalleryLayout {
+export function computePartialLayout(layout: IGalleryLayout | undefined, items: IGalleryItem[], galleryWidth: number, targetRowHeight: number): IGalleryLayout {
 
     if (!layout) {
         layout = {
@@ -36,6 +36,7 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
 
     const rows = layout.rows;
 
+    let prevRow: IGalleryRow | undefined = undefined;
     let curRow: IGalleryRow;
     let startingRowIndex = 0;
 
@@ -59,12 +60,16 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
         //
         startingRowIndex = rows.length-1;
         curRow = rows[startingRowIndex];
+
+        if (rows.length > 1) {
+            prevRow = rows[rows.length-2];
+        }
     }
 
     //
     // Initially assign each gallery item to a series of rows.
     //
-    for (let itemIndex = startIndex; itemIndex <= endIndex; itemIndex++) {
+    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
         const item = items[itemIndex];
         const aspectRatio = item.width / item.height;
         const computedWidth = targetRowHeight * aspectRatio;
@@ -74,8 +79,9 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
                 //
                 // Break row on width.
                 //
+                prevRow = curRow;
                 curRow = {
-                    startingAssetIndex: itemIndex,
+                    startingAssetIndex: prevRow && (prevRow.startingAssetIndex + prevRow.items.length) || 0,
                     items: [],
                     offsetY: 0,
                     height: targetRowHeight,
@@ -84,13 +90,13 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
                 };
                 rows.push(curRow);
             }
-
-            if (curRow.group !== item.group) {
+            else if (curRow.group !== item.group) {
                 //
                 // Break row on group.
                 //
+                prevRow = curRow;
                 curRow = { //TODO: This should be optional.
-                    startingAssetIndex: itemIndex,
+                    startingAssetIndex: prevRow && (prevRow.startingAssetIndex + prevRow.items.length) || 0,
                     items: [],
                     offsetY: 0,
                     height: targetRowHeight,

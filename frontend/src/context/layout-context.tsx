@@ -54,12 +54,17 @@ export interface IProps {
 
 export function LayoutContextProvider({ children, galleryWidth, targetRowHeight }: IProps) {
 
-    const { assets, searchedAssets, searchText } = useGallery();
+    const { assets, searchedAssets, searchText, enumerateAssets } = useGallery();
 
     //
     // Reference to the current gallery layout.
     //
     const layoutRef = useRef<IGalleryLayout | undefined>(undefined);
+
+    //
+    // Used to track if the layout is being built.
+    //
+    const buildingLayoutRef = useRef<boolean>(false);
 
     //
     // Set to true when the first page of assets has loaded.
@@ -72,40 +77,52 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
     //
     async function buildLayout(): Promise<void> {
 
-        const items = searchedAssets || assets;
+        if (buildingLayoutRef.current) {
+            // Don't start another layout build if one is already in progress.
+            console.log(`>> Layout build already in progress.`);
+            return;
+        }
 
-        if (items.length === 0
-            || galleryWidth === 0 
+        if (galleryWidth === 0 
             || targetRowHeight === 0) {
             // Don't layout if we don't know these details.
             return;
         }
 
-        console.log(`Started rebuild layout.`);
+        console.log(`>> Started rebuild layout.`);
 
-        //
-        // Layout the first page.
-        //
-        layoutRef.current = computePartialLayout(undefined, items, 0, Math.min(999, items.length-1), galleryWidth, targetRowHeight);
+        buildingLayoutRef.current = true;
 
-        // 
-        // Trigger rerender to show the first page.
-        //
-        setFirstPageLoaded(true);
+        try {
+            layoutRef.current = undefined; // Starting a new layout.
+            
+            let firstPageLoaded = false;
 
-        if (items.length > 1000) {
-            //
-            // Sleep for a moment to allow the rerender before finshing the layout.
-            //
-            await sleep(100);
+            for await (const batch of enumerateAssets()) {
+                //
+                // Layout the first page.
+                //
+                layoutRef.current = computePartialLayout(layoutRef.current, batch, galleryWidth, targetRowHeight); 
 
-            //
-            // Layout the remaining items.
-            //
-            layoutRef.current = computePartialLayout(layoutRef.current, assets, 1000, assets.length-1, galleryWidth, targetRowHeight);
+                // 
+                // Trigger rerender to show the first page.
+                //
+                if (!firstPageLoaded) {
+                    firstPageLoaded = true;
+                    setFirstPageLoaded(true);
+
+                    //
+                    // Sleep for a moment to allow the rerender before finshing the layout.
+                    //
+                    await sleep(100);
+                }
+            }
+        }
+        finally {
+            buildingLayoutRef.current = false;
         }
 
-        console.log(`Finished rebuild layout.`);
+        console.log(`>> Finished rebuild layout for items ${layoutRef.current!.rows.reduce((acc, row) => acc + row.items.length, 0)}`);
     }
 
     const value: ILayoutContext = {

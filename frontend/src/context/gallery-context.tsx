@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext, useRef, useState } from "r
 import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
 import flexsearch from "flexsearch";
+import { sleep } from "../lib/sleep";
 
 export interface IGalleryContext {
 
@@ -15,6 +16,11 @@ export interface IGalleryContext {
     // Loads all assets into memory.
     //
     loadAssets(): Promise<void>;
+
+    //
+    // Returns a function that can be used to enumerate assets, even while they are being incrementally loaded.
+    //
+    enumerateAssets(): AsyncGenerator<IGalleryItem[]>;
 
     //
     // The assets currently loaded.
@@ -91,6 +97,11 @@ export function GalleryContextProvider({ children }: IProps) {
     const loadedAssetsRef = useRef<IGalleryItem[]>([]);
 
     //
+    // Set to true when loading has finished.
+    //
+    const loadingFinishedRef = useRef(false);
+
+    //
     // The list of assets retreived from the serach index.
     //
     const searchedAssetsRef = useRef<IGalleryItem[] | undefined>(undefined);
@@ -137,6 +148,8 @@ export function GalleryContextProvider({ children }: IProps) {
 
         let maxPages = 3; // Limit the number of pages to load for testing.
 
+        console.log(`== Loading assets...`)
+
         while (true) {
             const assetsResult = await api.getAssets(continuation);
 
@@ -157,7 +170,7 @@ export function GalleryContextProvider({ children }: IProps) {
                 assetIndex += 1; // Identify assets by their index in the array.
             }
 
-            console.log(`Added ${assetsResult.assets.length} assets.`);
+            console.log(`== Added ${assetsResult.assets.length} assets.`);
 
             // 
             // Trigger rerender to display the first page of assets.
@@ -180,7 +193,68 @@ export function GalleryContextProvider({ children }: IProps) {
             }
         }
 
-        console.log(`Loaded ${loadedAssets.length} assets in total.`);
+        loadingFinishedRef.current = true;
+
+        console.log(`== Loaded ${loadedAssets.length} assets in total.`);
+    }
+
+    //
+    // Returns a function that can be used to enumerate assets, even while they are being incrementally loaded.
+    //
+    async function* enumerateAssets(): AsyncGenerator<IGalleryItem[]> {
+        if (loadingFinishedRef.current) {
+            console.log(`>> Enumerating loaded assets #${loadedAssetsRef.current.length}`);
+
+            //
+            // Loading of assets has finished.
+            // Yield in 1000 item chunks.
+            //
+            for (let i = 0; i < loadedAssetsRef.current.length; i += 1000) {
+                yield loadedAssetsRef.current.slice(i, i+1000);
+            }                                
+        }
+        else {
+            console.log(`>> Enumerating loading assets #${loadedAssetsRef.current.length}`);
+            
+            //
+            // Loading of assets is still in progress.
+            // Yield them as they are loaded.
+            //
+            let i = 0;
+            while (i < loadedAssetsRef.current.length-1000) {
+                yield loadedAssetsRef.current.slice(i, i+1000);
+                i += 1000;
+            }                                
+
+            while (!loadingFinishedRef.current) {
+
+                //
+                // Wait and allow more assets to load.
+                //
+                await sleep(100);
+
+                //
+                // If there are 1000 more, continue to yield them as they are loaded.
+                //
+                if (loadedAssetsRef.current.length-i >= 1000) {
+                    console.log(`>> Enumerating more assets #${loadedAssetsRef.current.length-i}`);
+
+                    yield loadedAssetsRef.current.slice(i, i+1000);
+                    i += 1000;                    
+                }
+            }
+
+            console.log(`>> Assets have finished loading, enumerating remaining #${loadedAssetsRef.current.length-i}`)
+
+            //
+            // If any are remaining, yield them.
+            //
+            if (i < loadedAssetsRef.current.length) {
+                yield loadedAssetsRef.current.slice(i);
+            }
+
+            console.log(`>> Finished enumerating assets #${loadedAssetsRef.current.length}`);
+        }
     }
 
     //
@@ -294,6 +368,7 @@ export function GalleryContextProvider({ children }: IProps) {
     const value: IGalleryContext = {
         firstPageLoaded,
         loadAssets,
+        enumerateAssets,
         assets: loadedAssetsRef.current,
         addAsset,
         searchText,
