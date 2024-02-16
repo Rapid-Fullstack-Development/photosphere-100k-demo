@@ -1,9 +1,20 @@
-import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, ReactNode, useContext, useRef, useState } from "react";
 import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
 import flexsearch from "flexsearch";
 
 export interface IGalleryContext {
+
+    //
+    // Set to true when the first page has loaded.
+    // Used to triger a rerender to display the first page.
+    //
+    firstPageLoaded: boolean;
+
+    //
+    // Loads all assets into memory.
+    //
+    loadAssets(): Promise<void>;
 
     //
     // The assets currently loaded.
@@ -16,11 +27,6 @@ export interface IGalleryContext {
     addAsset(asset: IGalleryItem): void;
 
     //
-    // Sets the assets currently loaded.
-    //
-    setAssets(assets: IGalleryItem[]): void;
-
-    //
     // The current search text.
     //
     searchText: string;
@@ -28,7 +34,7 @@ export interface IGalleryContext {
     //
     // Assets that have been found by a search.
     //
-    searchedAssets: IGalleryItem[];
+    searchedAssets: IGalleryItem[] | undefined;
 
     //
     // Search for assets based on text input.
@@ -80,19 +86,19 @@ export function GalleryContextProvider({ children }: IProps) {
     const api = useApi();
 
     //
-    // Assets that have been loaded from the backend.
+    // The list of assets that have been loaded.
     //
-    const [ assets, setAssets ] = useState<IGalleryItem[]>([]);
+    const loadedAssetsRef = useRef<IGalleryItem[]>([]);
+
+    //
+    // The list of assets retreived from the serach index.
+    //
+    const searchedAssetsRef = useRef<IGalleryItem[] | undefined>(undefined);
 
     //
     // The current search that has been executed.
     //
     const [ searchText, setSearchText ] = useState<string>("");
-
-    //
-    // Assets found by a search.
-    //
-    const [ searchedAssets, setSearchedAssets ] = useState<IGalleryItem[]>([]);
 
     //
     // The item in the gallery that is currently selected.
@@ -105,22 +111,31 @@ export function GalleryContextProvider({ children }: IProps) {
     const searchIndexRef = useRef<flexsearch.Document<IGalleryItem, true> | undefined>(undefined);
 
     //
-    // Load all assets into memory.
-    // I want to learn if it's possible for this web page to handle 100k assets all loaded at once.
+    // Set to true when the first page of assets has loaded.
+    // Triggers a rerender to show the first page of the gallery.
     //
-    async function loadAllAssets(): Promise<void> {
+    const [firstPageLoaded, setFirstPageLoaded] = useState(false);
+
+    //
+    // Load all assets into memory.
+    //
+    async function loadAssets(): Promise<void> {
 
         const searchIndex = new flexsearch.Document<IGalleryItem, true>({
             preset: "memory",
             document: {
                 id: "_", // Set when adding a document.
-                index: [ "description" ],
+                index: [ "description", "labels" ],
             },
         });
         searchIndexRef.current = searchIndex;
 
         let continuation: string | undefined = undefined;
         let loadedAssets: IGalleryItem[] = [];
+
+        let firstPageLoaded = false;
+
+        let maxPages = 3; // Limit the number of pages to load for testing.
 
         while (true) {
             const assetsResult = await api.getAssets(continuation);
@@ -131,8 +146,11 @@ export function GalleryContextProvider({ children }: IProps) {
             // Keep a copy of newly loaded assets.
             //
             loadedAssets = loadedAssets.concat(assetsResult.assets);
-            setAssets(loadedAssets);
+            loadedAssetsRef.current = loadedAssets;
 
+            //
+            // Build the search index as we go.
+            //
             for (const asset of assetsResult.assets) {
                 searchIndex.add(assetIndex, asset);
 
@@ -141,33 +159,35 @@ export function GalleryContextProvider({ children }: IProps) {
 
             console.log(`Added ${assetsResult.assets.length} assets.`);
 
+            // 
+            // Trigger rerender to display the first page of assets.
+            //
+            if (!firstPageLoaded) {
+                firstPageLoaded = true;
+                setFirstPageLoaded(true);
+            }
+
             if (assetsResult.next === undefined) {
                 // Done.
                 break;
             }
 
             continuation = assetsResult.next;
+
+            maxPages -= 1;
+            if (maxPages <= 0) { //fio:
+                break;
+            }
         }
 
         console.log(`Loaded ${loadedAssets.length} assets in total.`);
     }
 
     //
-    // Loads all assets on mount.
-    //
-    useEffect(() => {
-        loadAllAssets()
-            .catch((error) => {
-                console.error(`Failed to load all assets:`);
-                console.error(error);
-            });
-    }, []);
-
-    //
     // Adds an asset to the gallery.
     //
     function addAsset(asset: IGalleryItem): void {
-        setAssets([ asset, ...assets ]);
+        loadedAssetsRef.current = [ asset, ...loadedAssetsRef.current ];
     }
 
     //
@@ -186,27 +206,29 @@ export function GalleryContextProvider({ children }: IProps) {
             return;
         }
 
-        setSearchText(newSearchText);
-
         if (newSearchText === "") {
             // No search.
-            setSearchedAssets(assets);
+            searchIndexRef.current = undefined;
+            setSearchText("");
             return;
         }
 
         const searchResult = searchIndexRef.current!.search(newSearchText);
-        console.log(searchResult);
+        
+        let searchedAssets: IGalleryItem[] = [];
 
-        // todo: translate search result indexes to assets.
-        // const searchedAssets: IGalleryItem[] = [];
+        for (const searchTerm of searchResult) {
+            for (const itemIndex of searchTerm.result) {
+                searchedAssets.push(loadedAssetsRef.current![itemIndex as number]);
+            }
+        }
 
-        // for (const item of searchResult) {
-        //     for (const result of item.result) {
-        //         searchedAssets.push((result as any).doc); //todo: cast
-        //     }
-        // }
+        searchedAssetsRef.current = searchedAssets;
 
-        // setSearchedAssets(searchedAssets);
+        //
+        // Trigger rerender to show the search results.
+        //
+        setSearchText(newSearchText);
     }
 
     //
@@ -220,14 +242,17 @@ export function GalleryContextProvider({ children }: IProps) {
     // Gets the previous asset, or undefined if none.
     //
     function getPrev(selectedItem: ISelectedGalleryItem): ISelectedGalleryItem | undefined {
+
         if (selectedItem.index < 0) {
             return undefined;
         }
 
+        const items = searchedAssetsRef.current || loadedAssetsRef.current;
+
         if (selectedItem.index > 0) {
             const prevIndex = selectedItem.index-1;
             return {
-                item: assets[prevIndex],
+                item: items[prevIndex],
                 index: prevIndex,
             };
         }
@@ -240,15 +265,17 @@ export function GalleryContextProvider({ children }: IProps) {
     // Gets the next asset, or undefined if none.
     //
     function getNext(selectedItem: ISelectedGalleryItem): ISelectedGalleryItem | undefined {
-        
+
         if (selectedItem.index < 0) {
             return undefined;
         }
 
-        if (selectedItem.index < assets.length-1) {
+        const items = searchedAssetsRef.current || loadedAssetsRef.current;
+
+        if (selectedItem.index < items.length-1) {
             const nextIndex = selectedItem.index + 1;
             return {
-                item: assets[nextIndex],
+                item: items[nextIndex],
                 index: nextIndex,
             };
         }
@@ -265,11 +292,12 @@ export function GalleryContextProvider({ children }: IProps) {
     }
 
     const value: IGalleryContext = {
-        assets,
+        firstPageLoaded,
+        loadAssets,
+        assets: loadedAssetsRef.current,
         addAsset,
-        setAssets,
         searchText,
-        searchedAssets,
+        searchedAssets: searchedAssetsRef.current,
         search,
         clearSearch,
         getPrev,

@@ -113,6 +113,22 @@ i {
     margin-top: 51px;
 }
 
+/* Gallery */
+
+.gallery-thumb {
+    opacity: 0;
+    animation: fadeInAnimation 1s ease-in forwards;
+}
+
+@keyframes fadeInAnimation {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 /* Drag and drop */
 
 #upload-drop-area {

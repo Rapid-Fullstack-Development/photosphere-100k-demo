@@ -10,6 +10,11 @@ export interface IGalleryItem {
     _id: string;
 
     //
+    // The horizontal location where the image starts in the gallery.
+    //
+    offsetX?: number;
+
+    //
     // The width of the item.
     //
     width: number;
@@ -96,9 +101,19 @@ export interface IGalleryItem {
 export interface IGalleryRow {
 
     //
+    // The index in the gallery of the first asset in this row.
+    //
+    startingAssetIndex: number;
+
+    //
     // Items to display in this row in the gallery.
     //
     items: IGalleryItem[];
+
+    //
+    // The vertical location where the row starts in the gallery.
+    //
+    offsetY: number;
 
     //
     // The width of this row in the gallery.

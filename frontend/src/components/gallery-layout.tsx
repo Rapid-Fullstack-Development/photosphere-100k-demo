@@ -1,107 +1,174 @@
-import React from "react";
-import { createLayout } from "../lib/create-layout";
-import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
-import { useApi } from "../context/api-context";
+import React, { useEffect, useRef, useState } from "react";
+import { IGalleryRow, ISelectedGalleryItem } from "../lib/gallery-item";
+import { IApiContext, useApi } from "../context/api-context";
+import { useLayout } from "../context/layout-context";
+import { Image } from "./image";
+import { IGalleryLayout } from "../lib/create-layout";
+import { useGallery } from "../context/gallery-context";
+
+export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
+
+//
+// Renders a row of items in the gallery.
+//
+function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemClick: ItemClickFn | undefined) {
+    return (
+        <div
+            key={rowIndex}
+            >
+            {row.items.map((item, index) => {
+                return (
+                    <Image
+                        key={item._id}
+                        src={api.makeUrl(`/thumb?id=${item._id}`)}
+                        onClick={() => {
+                            if (onItemClick) {
+                                onItemClick({ 
+                                    item, 
+                                    index: row.startingAssetIndex + index 
+                                });
+                            }
+                        }}
+                        x={item.offsetX!}
+                        y={row.offsetY}
+                        width={item.thumbWidth!}
+                        height={item.thumbHeight!}
+                        index={row.startingAssetIndex + index}
+                        />
+                );
+            })}
+        </div>        
+    );
+}
+
+//
+// Represents a range of rows in the gallery.
+//
+interface IRange {
+    //
+    // The index of the first row to render.
+    //
+    startIndex: number;
+
+    // 
+    // The index of the last row to render.
+    //
+    endIndex: number;
+}
+
+//
+// Determines the range of visible items.
+//
+function findVisibleRange(galleryLayout: IGalleryLayout | undefined, scrollTop: number, contentHeight: number): IRange | undefined {
+    if (!galleryLayout) {
+        return undefined;
+    }
+    
+    const buffer = 5; // Number of items to render outside the viewport, above and below
+    const startIndex = Math.max(0, galleryLayout.rows.findIndex(row => row.offsetY >= scrollTop) - buffer);
+    const endIndex = Math.min(galleryLayout.rows.length-1, galleryLayout.rows.findIndex(row => row.offsetY - scrollTop > contentHeight) + buffer);
+    return {
+        startIndex,
+        endIndex,
+    };      
+}    
+
+//
+// Renders rows in the visible range.
+//
+function renderVisibleRange(api: IApiContext, galleryLayout: IGalleryLayout | undefined, scrollTop: number, contentHeight: number | undefined, onItemClick: ItemClickFn | undefined) {
+    if (!contentHeight || !galleryLayout) {
+        return [];
+    }
+
+    const range = findVisibleRange(galleryLayout, scrollTop, contentHeight);
+    if (!range) {
+        return [];
+    }
+
+    const renderedRows: JSX.Element[] = [];
+
+    for (let rowIndex = range.startIndex; rowIndex <= range.endIndex; rowIndex++) {
+        const row = galleryLayout.rows[rowIndex];
+        renderedRows.push(renderRow(api, row, rowIndex, onItemClick));
+    }
+
+    return renderedRows;
+}
 
 export interface IGalleryLayoutProps { 
-    //
-    // The items to display in the gallery.
-    //
-	items: IGalleryItem[];
-
-    //
-    // The width of the gallery.
-    //
-	galleryWidth: number;
-
-    //
-    // The target height for rows in the gallery.
-    //
-	targetRowHeight: number;
 
     //
     // Event raised when an item in the gallery has been clicked.
     //
-    onItemClick: ((item: ISelectedGalleryItem) => void) | undefined;
+    onItemClick?: ItemClickFn;
 }
 
 //
 // Responsible for row-based gallery layout.
 //
-export function GalleryLayout({
-	items = [], 
-	galleryWidth = 600, 
-	targetRowHeight = 150, 
-    onItemClick = undefined,
-    }: IGalleryLayoutProps) {
+export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
     //
     // Interface to the API.
     //
     const api = useApi();
-    
-    const rows = createLayout(items, galleryWidth, targetRowHeight);
 
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const { searchText, firstPageLoaded, } = useGallery();
+    const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
+    const [scrollTop, setScrollTop] = useState(0);
+    
     let prevGroup: string | undefined = undefined;
+
+    //
+    // Rebuild layout when necessary. 
+    //
+    useEffect(() => {
+
+        buildLayout();
+
+    }, [firstPageLoaded, searchText, galleryWidth, targetRowHeight]);
+
+    //
+    // Handles scrolling.
+    //
+    useEffect(() => {
+        if (!containerRef.current) {
+            return;
+        }
+
+        const container = containerRef.current;
+
+        function handleScroll(): void {
+            setScrollTop(container.scrollTop);
+        }
+        container.addEventListener('scroll', handleScroll);
+    
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
 
     return (
         <div
+            ref={containerRef}
             style={{
-                width: `${galleryWidth}px`,
-                overflowX: "hidden",
+                overflowY: "auto",
+                height: "100%",
             }}
             >
-            {rows.map((row, rowIndex) => {
-                const items = [];
-                if (row.group !== prevGroup) {
-                    items.push(
-                        <div 
-                            key={row.group}
-                            style={{
-                                fontSize: "0.9rem",
-                                color: "rgb(60,64,67)",
-                                fontWeight: 600,
-                                lineHeight: "1.25rem",
-                                letterSpacing: ".0178571429em",
-                                padding: "1em",
-                            }}
-                            >
-                            {row.group}
-                        </div>
-                    );
-                    prevGroup = row.group;
-                }
-                items.push(
-                    <div
-                        key={rowIndex}
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            height: `${row.height}px`,
-                        }}
-                        >
-                        {row.items.map((item, index) => {
-                            return (
-                                <img 
-                                    data-testid="gallery-thumb"
-                                    style={{
-                                        padding: "2px",
-                                    }}
-                                    onClick={() => {
-                                        if (onItemClick) {
-                                            onItemClick({ item, index });
-                                        }
-                                    }}
-                                    key={item._id}
-                                    src={api.makeUrl(`/thumb?id=${item._id}`)}
-                                    />
-                            );
-                        })}
-                    </div>
-                );
-                return items;
-            })}
-
+            <div
+                style={{
+                    width: `${galleryWidth}px`,
+                    height: `${galleryLayout?.galleryHeight}px`,
+                    overflowX: "hidden",
+                    position: "relative",
+                }}
+                >
+                {renderVisibleRange(api, galleryLayout, scrollTop, containerRef.current?.clientHeight, onItemClick)}
+            </div>
         </div>
     );
 }

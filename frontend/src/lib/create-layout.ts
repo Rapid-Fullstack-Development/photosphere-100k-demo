@@ -5,30 +5,67 @@
 
 import { IGalleryItem, IGalleryRow } from "./gallery-item";
 
-//
-// Creates a row base layout for items in the gallery.
-//
-export function createLayout(items: IGalleryItem[], galleryWidth: number, targetRowHeight: number) {
+export interface IGalleryLayout {
+    //
+    // Rows of the layout.
+    //
+    rows: IGalleryRow[];
 
-    if (!items || !items.length) {
-        return [];
+    //
+    // The entire height of the gallery.
+    //
+    galleryHeight: number;
+}
+
+
+//
+// Creates or updates a row-based layout for items in the gallery.
+//
+export function computePartialLayout(layout: IGalleryLayout | undefined, items: IGalleryItem[], startIndex: number, endIndex: number, galleryWidth: number, targetRowHeight: number): IGalleryLayout {
+
+    if (!layout) {
+        layout = {
+            rows: [],
+            galleryHeight: 0,
+        };
     }
 
-    const rows = [];
+    if (!items || !items.length) {
+        return layout;
+    }
 
-    let curRow: IGalleryRow = {
-        items: [],
-        height: targetRowHeight,
-        width: 0,
-    };
+    const rows = layout.rows;
 
-    rows.push(curRow);
+    let curRow: IGalleryRow;
+    let startingRowIndex = 0;
+
+    if (rows.length === 0) {  
+        //
+        // Add the first row.
+        //
+        curRow = {
+            startingAssetIndex: 0,
+            items: [],
+            offsetY: 0,
+            height: targetRowHeight,
+            width: 0,
+        };
+    
+        rows.push(curRow);
+    }
+    else {
+        //
+        // Resume the previous row.
+        //
+        startingRowIndex = rows.length-1;
+        curRow = rows[startingRowIndex];
+    }
 
     //
     // Initially assign each gallery item to a series of rows.
     //
-    for (const item of items) {
-
+    for (let itemIndex = startIndex; itemIndex <= endIndex; itemIndex++) {
+        const item = items[itemIndex];
         const aspectRatio = item.width / item.height;
         const computedWidth = targetRowHeight * aspectRatio;
 
@@ -38,7 +75,9 @@ export function createLayout(items: IGalleryItem[], galleryWidth: number, target
                 // Break row on width.
                 //
                 curRow = {
+                    startingAssetIndex: itemIndex,
                     items: [],
+                    offsetY: 0,
                     height: targetRowHeight,
                     width: 0,
                     group: item.group,
@@ -51,7 +90,9 @@ export function createLayout(items: IGalleryItem[], galleryWidth: number, target
                 // Break row on group.
                 //
                 curRow = { //TODO: This should be optional.
+                    startingAssetIndex: itemIndex,
                     items: [],
+                    offsetY: 0,
                     height: targetRowHeight,
                     width: 0,
                     group: item.group,
@@ -80,7 +121,7 @@ export function createLayout(items: IGalleryItem[], galleryWidth: number, target
     //
     // For all rows, except the last row, stretch the items towards the right hand boundary.
     //
-    for (let rowIndex = 0; rowIndex < rows.length-1; rowIndex++) {
+    for (let rowIndex = startingRowIndex; rowIndex < rows.length-1; rowIndex++) {
         const row = rows[rowIndex];
         const nextRow = rows[rowIndex+1];
         if (row.group !== nextRow.group) {
@@ -110,7 +151,7 @@ export function createLayout(items: IGalleryItem[], galleryWidth: number, target
     //
     // Now pull back the width of all rows so they don't overlap the right hand edge by too much.
     //
-    for (let rowIndex = 0; rowIndex < rows.length-1; rowIndex++) {
+    for (let rowIndex = startingRowIndex; rowIndex < rows.length-1; rowIndex++) {
         const row = rows[rowIndex];
         const nextRow = rows[rowIndex+1];
         if (row.group !== nextRow.group) {
@@ -145,7 +186,24 @@ export function createLayout(items: IGalleryItem[], galleryWidth: number, target
         }
     }
 
-    return rows;
+    //
+    // Computes the offsets of each row and total height of the gallery.
+    //
+
+    for (let rowIndex = startingRowIndex; rowIndex < rows.length-1; rowIndex++) {
+        const row = rows[rowIndex];
+        row.offsetY = layout.galleryHeight;
+        layout.galleryHeight += row.height;
+
+        let accumulatedWidth = 0;
+
+        for (const item of row.items) {
+            item.offsetX = accumulatedWidth;
+            accumulatedWidth += item.thumbWidth!;
+        }
+    }
+
+    return layout;
 }
 
 //

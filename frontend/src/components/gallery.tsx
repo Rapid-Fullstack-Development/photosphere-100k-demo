@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
-import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
+import { ISelectedGalleryItem } from "../lib/gallery-item";
 import { GalleryLayout } from "./gallery-layout";
 import useResizeObserver from "@react-hook/resize-observer";
+import { LayoutContextProvider } from "../context/layout-context";
 
 //
 // Adds a small gutter on the right hand side of the gallery for some whitespace.
@@ -9,10 +10,6 @@ import useResizeObserver from "@react-hook/resize-observer";
 const GUTTER = 8;
 
 export interface IGalleryProps { 
-    //
-    // The items to display in the gallery.
-    //
-	items: IGalleryItem[];
 
     //
     // The target height for rows in the gallery.
@@ -28,7 +25,7 @@ export interface IGalleryProps {
 //
 // A photo gallery component.
 //
-export function Gallery({ items, targetRowHeight, onItemClick }: IGalleryProps) {
+export function Gallery({ targetRowHeight, onItemClick }: IGalleryProps) {
 
     //
     // The width of the gallery.
@@ -51,13 +48,18 @@ export function Gallery({ items, targetRowHeight, onItemClick }: IGalleryProps) 
         <div 
         	className="pl-1" 
         	ref={containerRef}
+            style={{
+                height: "100%",
+            }}
         	>
-        	<GalleryLayout
+            <LayoutContextProvider
                 galleryWidth={galleryWidth}
                 targetRowHeight={targetRowHeight}
-                items={items}
-                onItemClick={onItemClick}
-                />
+                >
+                <GalleryLayout
+                    onItemClick={onItemClick}
+                    />
+            </LayoutContextProvider>
         </div>
     );
 }

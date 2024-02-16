@@ -357,7 +357,13 @@ export async function createServer(now: () => Date, storage: IStorage) {
             async assetId => { 
                 const data = await storage.read("metadata", assetId);
                 const asset = JSON.parse(data!);
-                return { _id: asset._id, description: asset.description };
+                return { 
+                    _id: asset._id, 
+                    width: asset.width,
+                    height: asset.height,
+                    description: asset.description,
+                    labels: asset.labels,
+                };
             },
         ));
 
