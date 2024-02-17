@@ -303,9 +303,19 @@ export function GalleryContextProvider({ children }: IProps) {
         
         let searchedAssets: IGalleryItem[] = [];
 
+        let searchedSet = new Set<number>();
+
         for (const searchTerm of searchResult) {
-            for (const itemIndex of searchTerm.result) {
-                searchedAssets.push(loadedAssetsRef.current![itemIndex as number]);
+            for (const itemId of searchTerm.result) {
+                const itemIndex = itemId as number;
+                if (searchedSet.has(itemIndex)) {
+                    // There search can return the same result multiple times.
+                    // We don't want to include an asset more than once though.
+                    continue;
+                }
+
+                searchedSet.add(itemIndex);
+                searchedAssets.push(loadedAssetsRef.current![itemIndex]);
             }
         }
 
