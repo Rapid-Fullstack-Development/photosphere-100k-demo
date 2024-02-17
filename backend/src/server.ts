@@ -1,6 +1,6 @@
 import express, { Request } from "express";
 import cors from "cors";
-import { IAsset } from "./lib/asset";
+import { IAsset, IMinimalAsset } from "./lib/asset";
 import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
 import { generateReverseChronoName } from "./lib/gen-name";
@@ -347,35 +347,68 @@ export async function createServer(now: () => Date, storage: IStorage) {
     });
 
     //
-    // Gets a paginated list of all assets.
+    // Assets cached in memory to test the difference that it makes loading assets from S3.
+    // Assets are divided up into pages.
     //
-    app.get("/assets", async (req, res) => {
+    const cachedAssets: IMinimalAsset[][] = [];
 
-        const next = req.query.next as string;
+    //
+    // Loads the next page of assets.
+    //
+    async function loadPage(next: string | undefined): Promise<{ assets: IMinimalAsset[], next?: string }> {
         const result = await storage.list("metadata", next);
         const assets = await Promise.all(result.assetsIds.map(
-            async assetId => { 
+            async (assetId) => {
                 const data = await storage.read("metadata", assetId);
                 const asset = JSON.parse(data!);
-                return { 
-                    _id: asset._id, 
+                return {
+                    _id: asset._id,
                     width: asset.width,
                     height: asset.height,
                     description: asset.description,
                     labels: asset.labels,
                 };
-            },
+            }
         ));
+        return { assets, next: result.continuation };
+    }
 
+    // 
+    // Loads all assets into memory.
+    //
+    async function loadAllAssets(): Promise<void> {
+        console.log("Loading all assets into memory...");
+        let numAssets = 0;
+        let current: string | undefined = undefined;
+        do {
+            const { assets, next } = await loadPage(current);
+            cachedAssets.push(assets);
+            numAssets += assets.length;
+            console.log(`Now have ${numAssets} assets in memory.`);
+
+            current = next;
+        } while (current);
+
+        console.log(`** Loaded ${numAssets} assets into memory.`);
+    }
+
+    //
+    // Gets a paginated list of all assets.
+    //
+    app.get("/assets", async (req, res) => {
+
+        const current = req.query.next && parseInt(req.query.next as string) || 0;
         res.json({
-            assets: assets,
-            next: result.continuation,
+            assets: cachedAssets[current] || [],
+            next: current < cachedAssets.length - 1 ? current + 1 : undefined,
         });
     });
 
     // exportUploadTestAssets(storage);
 
     // processTestAssets(storage);
+
+    await loadAllAssets();
 
     return app;
 }

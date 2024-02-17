@@ -1,6 +1,40 @@
 //
 // Represents an asset that has been uploaded to the backend.
 //
+
+//
+// Minimal asset data to return to the client.
+//
+export interface IMinimalAsset {
+    //
+    // Unique ID of the asset in the database.
+    //
+    _id: string;
+
+    //
+    // Width of the image or video.
+    //
+    width: number;
+
+    //
+    // Height of the image or video.
+    //
+    height: number;
+
+    //
+    // Labels attached to the asset.
+    //
+    labels?: string[];
+
+    //
+    // Description of the asset, once the user has set it.
+    //
+    description?: string;
+}
+
+//
+// Full asset data.
+//
 export interface IAsset {
 
     //
