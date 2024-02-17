@@ -18,7 +18,7 @@ export interface IGalleryContext {
     loadAssets(): Promise<void>;
 
     //
-    // Returns a function that can be used to enumerate assets, even while they are being incrementally loaded.
+    // Enumerate assets for display, even while they are being incrementally loaded.
     //
     enumerateAssets(): AsyncGenerator<IGalleryItem[]>;
 
@@ -199,9 +199,21 @@ export function GalleryContextProvider({ children }: IProps) {
     }
 
     //
-    // Returns a function that can be used to enumerate assets, even while they are being incrementally loaded.
+    // Enumerate assets for display, even while they are being incrementally loaded.
     //
     async function* enumerateAssets(): AsyncGenerator<IGalleryItem[]> {
+
+        if (searchText && searchedAssetsRef.current) {
+            //
+            // We have search results.
+            // Yield them in 1000 item chunks.
+            //
+            for (let i = 0; i < searchedAssetsRef.current.length; i += 1000) {
+                yield searchedAssetsRef.current.slice(i, i+1000);
+            }
+            return;
+        }
+
         if (loadingFinishedRef.current) {
             console.log(`>> Enumerating loaded assets #${loadedAssetsRef.current.length}`);
 
