@@ -238,7 +238,7 @@ export function Main() {
                 </button> */}
             </div>
 
-            <div id="main">
+            <div id="main" className={(openSearch ? "search": "")} >
                 <div id="content" className={sidebarOpen ? "open" : ""} >
                     <Routes>
                         <Route 

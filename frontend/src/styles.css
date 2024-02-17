@@ -110,7 +110,11 @@ i {
 
 
 #main {
-    margin-top: 51px;
+    margin-top: 52px;
+}
+
+#main.search {
+    margin-top: 104px;
 }
 
 /* Gallery */
