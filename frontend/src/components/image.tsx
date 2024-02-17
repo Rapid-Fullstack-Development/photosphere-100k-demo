@@ -118,6 +118,41 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
                 #{index+1}
             </div>
 
+            {/* Renders a debug panel for each image showing it's position and dimensions. */}
+            <div
+                style={{
+                    position: "absolute",
+                    left: `${x+2}px`,
+                    top: `${y+30}px`,
+                    color: "black",
+                    backgroundColor: "white",
+                    border: "1px solid black",
+                    padding: "8px",
+                    paddingRight: "12px",
+                    pointerEvents: "none",
+                    fontSize: "12px",
+                    lineHeight: "14px",
+                }}
+                >
+                <p>
+                    left = {x.toFixed(2)}  
+                </p>
+                <p>
+                    top = {y.toFixed(2)}
+                </p>
+                <p>
+                    right = {(x+width).toFixed(2)}  
+                </p>
+                <p>
+                    bottom = {(y+height).toFixed(2)}
+                </p>
+                <p>
+                    w = {width.toFixed(2)}
+                </p>
+                <p>
+                    h = {height.toFixed(2)}
+                </p>
+            </div>
         </>
     );
 };
