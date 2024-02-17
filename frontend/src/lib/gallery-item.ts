@@ -101,6 +101,11 @@ export interface IGalleryItem {
 export interface IGalleryRow {
 
     //
+    // The type of this row.
+    //
+    type?: "heading";
+
+    //
     // The index in the gallery of the first asset in this row.
     //
     startingAssetIndex: number;

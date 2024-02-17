@@ -13,6 +13,27 @@ export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
 // Renders a row of items in the gallery.
 //
 function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemClick: ItemClickFn | undefined) {
+    if (row.type === "heading") {
+        return (
+            <div 
+                key={row.group}
+                style={{
+                    fontSize: "0.9rem",
+                    color: "rgb(60,64,67)",
+                    fontWeight: 600,
+                    lineHeight: "1.25rem",
+                    letterSpacing: ".0178571429em",
+                    padding: "1em",
+                    position: "absolute",
+                    top: `${row.offsetY}px`,
+                    height: `${row.height}px`,
+                }}
+                >
+                {row.group}
+            </div>
+        );
+    }
+
     return (
         <div
             key={rowIndex}
@@ -132,8 +153,6 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
     
-    let prevGroup: string | undefined = undefined;
-
     //
     // Rebuild layout when necessary. 
     //

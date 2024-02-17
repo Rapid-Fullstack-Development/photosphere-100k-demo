@@ -193,6 +193,30 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
     }
 
     //
+    // Add group headings.
+    //
+    let prevGroup: string | undefined = undefined;
+
+    for (let rowIndex = startingRowIndex; rowIndex < rows.length; rowIndex++) {
+        const row = rows[rowIndex];
+
+        if (row.group !== prevGroup) {
+            rows.splice(rowIndex, 0, {
+                type: "heading",
+                startingAssetIndex: row.startingAssetIndex,
+                items: [],
+                offsetY: 0,
+                height: 45,
+                width: 0, // This isn't needed.
+                group: row.group,            
+            });
+            rowIndex += 1;
+        }
+
+        prevGroup = row.group;
+    }
+
+    //
     // Computes the offsets of each row and total height of the gallery.
     //
 
