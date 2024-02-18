@@ -13,14 +13,8 @@ import { IStorage } from "../services/storage";
 //     throw new Error(`You need an Unsplash API account and key to run this code. Set your API key in the environment variable UNSPLASH_ACCESS_KEY. See the readme for details.`);
 // }
 
-const PEXEL_API_KEY = process.env.PEXEL_API_KEY;
-if (!PEXEL_API_KEY) {
-    throw new Error(`You need a Pexels API account and key to run this code. Set your API key in the environment variable PEXEL_API_KEY. See the readme for details.`);
-}
-
 const NUM_PHOTOS = 100_000;
 const MAX_BATCH = 80;
-
 
 async function streamUrl(fileUrl: string) {
     const { data } = await axios({ method: "get", url: fileUrl, responseType: "stream" });
@@ -124,6 +118,11 @@ async function uploadBatch(storage: IStorage, page: number): Promise<boolean> {
 
     // Unsplash URL.
     // const url = `https://api.unsplash.com/photos?client_id=${UNSPLASH_ACCESS_KEY}&page=${page}&per_page=${MAX_BATCH}`;
+
+    const PEXEL_API_KEY = process.env.PEXEL_API_KEY;
+    if (!PEXEL_API_KEY) {
+        throw new Error(`You need a Pexels API account and key to run this code. Set your API key in the environment variable PEXEL_API_KEY. See the readme for details.`);
+    }
 
     // Pexels URL.
     // const url = `https://api.pexels.com/v1/curated?per_page=${MAX_BATCH}&page=${page}`;
