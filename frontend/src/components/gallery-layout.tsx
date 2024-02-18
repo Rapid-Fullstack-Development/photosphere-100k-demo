@@ -6,6 +6,7 @@ import { Image } from "./image";
 import { IGalleryLayout } from "../lib/create-layout";
 import { useGallery } from "../context/gallery-context";
 import { debounce } from "lodash";
+import { useImageQueue } from "../context/image-queue-context";
 
 export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
 
@@ -152,6 +153,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     const { searchText, firstPageLoaded } = useGallery();
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
+    const { resetQueue } = useImageQueue();
     
     //
     // Rebuild layout when necessary. 
@@ -181,6 +183,11 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             container.removeEventListener('scroll', handleScroll);
         };
     }, []);
+
+    //
+    // Remove any currently queued images and queue the images needed for the visible range.
+    //
+    resetQueue();
 
     return (
         <div
@@ -224,7 +231,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     #rows: {galleryLayout?.rows.length}
                 </p>
                 <p>
-                    #items: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
+                    #photos: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
                 </p>
             </div>
         </div>

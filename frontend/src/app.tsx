@@ -4,6 +4,7 @@ import { Main } from "./main";
 import { ApiContextProvider } from "./context/api-context";
 import { GalleryContextProvider } from "./context/gallery-context";
 import { UploadContextProvider } from "./context/upload-context";
+import { ImageQueueContextProvider } from "./context/image-queue-context";
 
 export function App() {
     return (
@@ -11,7 +12,9 @@ export function App() {
             <ApiContextProvider>
                 <GalleryContextProvider>
                     <UploadContextProvider>
-                        <Main />
+                        <ImageQueueContextProvider>
+                            <Main />
+                        </ImageQueueContextProvider>
                     </UploadContextProvider>
                 </GalleryContextProvider>
             </ApiContextProvider>

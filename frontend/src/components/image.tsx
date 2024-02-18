@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { loadImageAsDataURL } from "../lib/image";
+
+import { useImageQueue } from "../context/image-queue-context";
 
 export interface IImageProps {
     //
@@ -46,15 +47,12 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
 
     const [imageDataUrl, setImageDataUrl] = useState<string>("");
 
+    const { loadImageAsDataUrl } = useImageQueue();
+
     useEffect(() => {
-        loadImageAsDataURL(src)
-            .then(dataUrl => {
-                setImageDataUrl(dataUrl);
-            })
-            .catch(err => {
-                console.error(`Failed to load image ${src}`);
-                console.error(err);            
-            });
+        loadImageAsDataUrl(src, imageDataUrl => {
+            setImageDataUrl(imageDataUrl);
+        });
     }, [src]);
 
     return (
@@ -119,7 +117,7 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
             </div>
 
             {/* Renders a debug panel for each image showing it's position and dimensions. */}
-            <div
+            {/* <div
                 style={{
                     position: "absolute",
                     left: `${x+2}px`,
@@ -152,7 +150,7 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
                 <p>
                     h = {height.toFixed(2)}
                 </p>
-            </div>
+            </div> */}
         </>
     );
 };
