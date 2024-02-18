@@ -81,14 +81,14 @@ export class CloudStorage implements IStorage {
     // Reads a file from storage.
     // Returns undefined if the file doesn't exist.
     //
-    async read(type: string, assetId: string): Promise<string | undefined> {
+    async read(type: string, assetId: string): Promise<Buffer | undefined> {
         const getParams: aws.S3.Types.GetObjectRequest = {
             Bucket: this.bucket, 
             Key: `${type}/${assetId}`,
         };
         try {
             const getObjectOutput = await this.s3.getObject(getParams).promise();
-            return getObjectOutput.Body?.toString("utf-8");
+            return getObjectOutput.Body as Buffer;
         }
         catch (err: any) {
             if (err.code === 'NoSuchKey') {

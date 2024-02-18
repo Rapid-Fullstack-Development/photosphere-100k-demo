@@ -252,7 +252,8 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
     for await (const assetId of enumerateAssets(storage)) {
         // console.log(assetId);
         
-        const asset = JSON.parse(await storage.read("metadata", assetId) as string) as IAsset;
+        const data = await storage.read("metadata", assetId);
+        const asset = JSON.parse(data!.toString("utf-8")) as IAsset;
         if (!asset.description) {
             console.log(`Missing description for ${assetId}`);
             console.log(JSON.stringify(asset, null, 2));

@@ -89,7 +89,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         if (!metadataText) {
             throw new Error(`Asset metadata not found for asset id ${assetId}`);
         }
-        const metadata = JSON.parse(metadataText);
+        const metadata = JSON.parse(metadataText.toString("utf-8"));
         return metadata;
     }
 
@@ -113,7 +113,11 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Reads the assetId that is linked to a hash.
     //
     async function readHash(hash: string): Promise<string | undefined> {
-        return await storage.read("hash", hash);
+        const buffer = await storage.read("hash", hash);
+        if (!buffer) {
+            return undefined;
+        }
+        return buffer.toString("utf-8");
     }
 
     //
@@ -215,6 +219,50 @@ export async function createServer(now: () => Date, storage: IStorage) {
         res.sendStatus(200);
     });
 
+    interface IThumbnail {
+        contentType: string;
+        data: Buffer;
+    }
+
+    const thumbnailCache: Map<string, IThumbnail> = new Map<string, IThumbnail>();
+
+    //
+    // Preload a single thumbnail.
+    //
+    async function preloadThumbnail(assetId: string): Promise<void> {
+        const assetInfo = await storage.info("thumb", assetId);
+        const thumb = await storage.read("thumb", assetId);
+        thumbnailCache.set(assetId, {
+            contentType: assetInfo.contentType,
+            data: thumb!,
+        });
+    }
+
+    //
+    // Preload all the thumbnails.
+    //
+    async function preloadThumbnails(): Promise<void> {
+        console.log("Preloading thumbnails...");
+        
+        let next: string | undefined = undefined;
+        do {
+            const result = await storage.list("thumb", next);
+            await Promise.all(result.assetsIds.map(preloadThumbnail));
+            next = result.continuation;
+
+            console.log(`Loaded ${thumbnailCache.size} thumbnails.`);
+
+        } while (next);
+        
+        console.log(`Finished preloading ${thumbnailCache.size} thumbnails.`);
+    }
+
+    preloadThumbnails()
+        .catch(err => {
+            console.error("Failed to preload thumbnails.");
+            console.error(err);
+        });
+
     //
     // Gets the thumb for an asset by id.
     //
@@ -225,17 +273,30 @@ export async function createServer(now: () => Date, storage: IStorage) {
             throw new Error(`Asset ID not specified in query parameters.`);
         }
 
-        const assetInfo = await storage.info("thumb", assetId);
+        // const assetInfo = await storage.info("thumb", assetId);
+
+        // 
+        // Read from cache.
+        //
+        const thumb = thumbnailCache.get(assetId);
+        if (!thumb) {
+            res.sendStatus(404);
+            return;
+        }
+
+        res.set("Content-Type", thumb.contentType);
+        res.send(thumb.data);
 
         //
-        // Return the thumbnail.
+        // Read from S3.
         //
-        res.writeHead(200, {
-            "Content-Type": assetInfo.contentType,
-        });
+        // res.writeHead(200, {
+        //     "Content-Type": thumb.contentType,
+        // });
 
-        const stream = await storage.readStream("thumb", assetId);
-        stream.pipe(res);
+        // const stream = await storage.readStream("thumb", assetId);
+        // stream.pipe(res);
+
     });
 
     //
@@ -360,7 +421,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         const assets = await Promise.all(result.assetsIds.map(
             async (assetId) => {
                 const data = await storage.read("metadata", assetId);
-                const asset = JSON.parse(data!);
+                const asset = JSON.parse(data!.toString("utf-8"));
                 return {
                     _id: asset._id,
                     width: asset.width,
@@ -408,7 +469,11 @@ export async function createServer(now: () => Date, storage: IStorage) {
 
     // processTestAssets(storage);
 
-    await loadAllAssets();
+    loadAllAssets()
+        .catch(err => {
+            console.error("Failed to load all assets into memory.");
+            console.error(err);
+        });
 
     return app;
 }

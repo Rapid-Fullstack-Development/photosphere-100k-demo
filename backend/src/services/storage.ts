@@ -51,7 +51,7 @@ export interface IStorage {
     // Reads a file from storage.
     // Returns undefined if the file doesn't exist.
     //
-    read(type: string, assetId: string): Promise<string | undefined>;
+    read(type: string, assetId: string): Promise<Buffer | undefined>;
 
     //
     // Writes a file to storage.

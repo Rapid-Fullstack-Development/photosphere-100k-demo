@@ -57,7 +57,7 @@ export class FileStorage implements IStorage {
     // Reads a file from storage.
     // Returns undefined if the file doesn't exist.
     //
-    async read(type: string, assetId: string): Promise<string | undefined> {
+    async read(type: string, assetId: string): Promise<Buffer | undefined> {
 
         const fileName = this.getLocalFileName(type, assetId);
 
@@ -66,7 +66,7 @@ export class FileStorage implements IStorage {
             return undefined;
         }
         
-        return await fs.readFile(fileName, "utf8");
+        return await fs.readFile(fileName);
     }
 
     //
