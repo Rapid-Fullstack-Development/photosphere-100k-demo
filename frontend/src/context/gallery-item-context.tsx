@@ -16,11 +16,6 @@ export interface IGalleryItemContext {
     setAsset(asset: IGalleryItem): void;
 
     //
-    // Updates certain fields on the asset.
-    //
-    updateAsset(asset: Partial<IGalleryItem>): void;
-
-    //
     // Sets the description on the asset.
     //
     setDescription(description: string): Promise<void>;
@@ -66,29 +61,12 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     //
     // Interface to the gallery.
     //
-    const { assets, setAssets } = useGallery();
+    const { assets, updateAsset } = useGallery();
 
     //
     // The asset being edited.
     //
     const [_asset, setAsset] = useState<IGalleryItem>(asset);
-
-    //
-    // Updates certain fields on the asset.
-    //
-    function updateAsset(assetUpdate: Partial<IGalleryItem>): void {
-        const newAsset = {
-            ..._asset,
-            ...assetUpdate,
-        };
-        setAsset(newAsset);
-
-        setAssets([
-            ...assets.slice(0, assetIndex),
-            newAsset,
-            ...assets.slice(assetIndex + 1),
-        ]);
-    }
 
     //
     // Debounces the update of the description.
@@ -121,7 +99,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
         // Updating the description triggers a timeout (see useEffect above)
         // to update the description on the backend.
         //
-        updateAsset({
+        updateAsset(assetIndex, {
             description,
         });
     }
@@ -133,7 +111,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
 
         await api.addLabel(_asset._id, label);
 
-        updateAsset({
+        updateAsset(assetIndex, {
             labels: [
                 ...(_asset.labels || []),
                 label,
@@ -148,7 +126,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
 
         await api.removeLabel(_asset._id, label);
 
-        updateAsset({
+        updateAsset(assetIndex, {
             labels: (_asset.labels || []).filter(x => x !== label),
         });
     }
@@ -156,7 +134,6 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     const value: IGalleryItemContext = {
         asset: _asset,
         setAsset,
-        updateAsset,
         setDescription,
         addLabel,
         removeLabel,

@@ -33,6 +33,11 @@ export interface IGalleryContext {
     addAsset(asset: IGalleryItem): void;
 
     //
+    // Updates certain fields on the asset.
+    //
+    updateAsset(assetIndex: number, assetUpdate: Partial<IGalleryItem>): void;
+
+    //
     // The current search text.
     //
     searchText: string;
@@ -277,6 +282,20 @@ export function GalleryContextProvider({ children }: IProps) {
     }
 
     //
+    // Updates certain fields on the asset.
+    //
+    function updateAsset(assetIndex: number, assetUpdate: Partial<IGalleryItem>): void {
+        if (!loadedAssetsRef.current) {
+            throw new Error(`No assets loaded.`);
+        }
+
+        loadedAssetsRef.current[assetIndex] = {
+            ...loadedAssetsRef.current[assetIndex],
+            ...assetUpdate,
+        };
+    }
+
+    //
     // Sets the search text for finding assets.
     // Passing in empty string or undefined gets all assets.
     // This does a gallery reset when the search term has changed.
@@ -393,6 +412,7 @@ export function GalleryContextProvider({ children }: IProps) {
         enumerateAssets,
         assets: loadedAssetsRef.current,
         addAsset,
+        updateAsset,
         searchText,
         searchedAssets: searchedAssetsRef.current,
         search,
