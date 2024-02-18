@@ -20,6 +20,7 @@ export interface IImageQueueContext {
     resetQueue(): void;
 }
 
+
 const ImageQueueContext = createContext<IImageQueueContext | undefined>(undefined);
 
 export interface IProps {    
@@ -48,9 +49,14 @@ interface IImageQueueEntry {
 export function ImageQueueContextProvider({ children }: IProps) {
 
     //
-    // The queue of images to be loaded.
+    // The queue of high priority images to be loaded.
     //
-    const imageQueueRef = useRef<IImageQueueEntry[]>([]);
+    const highPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
+
+    //
+    // The queue of lower priority images to be loaded.
+    //
+    const lowPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
 
     //
     // Cache of images that have been loaded.
@@ -66,13 +72,20 @@ export function ImageQueueContextProvider({ children }: IProps) {
     // Loop loading the next image.
     //
     async function loadImages() {
+        if (isLoadingRef.current) {
+            // console.log(`$$ Loading images already in progress.`);
+            return;    
+        }
+
         isLoadingRef.current = true;
 
         // console.log(`** Loading images...`);
 
         try {
-            while (imageQueueRef.current.length > 0) {
-                const entry = imageQueueRef.current.shift()!;
+            while (highPriorityImageQueueRef.current.length > 0 || lowPriorityImageQueueRef.current.length > 0) {
+                const entry = highPriorityImageQueueRef.current.length > 0 
+                    ? highPriorityImageQueueRef.current.shift()!
+                    : lowPriorityImageQueueRef.current.shift()!;
                 const dataUrl = await loadImageAsDataURL(entry.src);
                 imageCache.current.set(entry.src, dataUrl);
                 entry.imageLoaded(dataUrl);
@@ -112,7 +125,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
         //
         // Otherwise add it to the queue to be loaded.
         //
-        imageQueueRef.current.push({ src, imageLoaded });
+        highPriorityImageQueueRef.current.push({ src, imageLoaded });
 
         //
         // Starts image loading.
@@ -125,7 +138,13 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     function resetQueue() {
         // console.log(`$$ Resetting image queue.`);
-        imageQueueRef.current = [];
+
+        //
+        // All high priority images are moved to low priority.
+        // This allows for visible images to be loaded more quickly.
+        //
+        lowPriorityImageQueueRef.current = highPriorityImageQueueRef.current.concat(lowPriorityImageQueueRef.current);
+        highPriorityImageQueueRef.current = [];
     }
 
     const value: IImageQueueContext = {

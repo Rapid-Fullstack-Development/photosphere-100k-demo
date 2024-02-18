@@ -174,13 +174,14 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
         const container = containerRef.current;
 
-        const handleScroll = throttle(() => {
+        const onScroll = throttle(() => {
             setScrollTop(container.scrollTop);
-        }, 100);
-        container.addEventListener('scroll', handleScroll);
+        }, 10);
+        
+        container.addEventListener('scroll', onScroll);
     
         return () => {
-            container.removeEventListener('scroll', handleScroll);
+            container.removeEventListener('scroll', onScroll);
         };
     }, []);
 
