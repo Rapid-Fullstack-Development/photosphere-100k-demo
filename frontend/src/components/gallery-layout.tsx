@@ -5,7 +5,7 @@ import { useLayout } from "../context/layout-context";
 import { Image } from "./image";
 import { IGalleryLayout } from "../lib/create-layout";
 import { useGallery } from "../context/gallery-context";
-import { debounce } from "lodash";
+import { throttle } from "lodash";
 import { useImageQueue } from "../context/image-queue-context";
 
 export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
@@ -174,9 +174,9 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
         const container = containerRef.current;
 
-        const handleScroll = debounce(() => {
+        const handleScroll = throttle(() => {
             setScrollTop(container.scrollTop);
-        }, 300);
+        }, 100);
         container.addEventListener('scroll', handleScroll);
     
         return () => {
