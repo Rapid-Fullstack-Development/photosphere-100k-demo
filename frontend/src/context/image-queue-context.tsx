@@ -98,26 +98,28 @@ export function ImageQueueContextProvider({ children }: IProps) {
 
         try {
             while (highPriorityImageQueueRef.current.length > 0 || lowPriorityImageQueueRef.current.length > 0) {
-                const entry = highPriorityImageQueueRef.current.length > 0 
-                    ? highPriorityImageQueueRef.current.shift()!
-                    : lowPriorityImageQueueRef.current.shift()!;
+                const entries = highPriorityImageQueueRef.current.length > 0 
+                    ? highPriorityImageQueueRef.current.splice(0, 5)
+                    : lowPriorityImageQueueRef.current.splice(0, 5);
                 
-                const cachedUrl = imageCache.current.get(entry.src);
-                if (cachedUrl) {
-                    //
-                    // Loaded from cache.
-                    //
-                    entry.imageLoaded(cachedUrl);
-                    continue;
-                }
-                
-                const dataUrl = await loadImageAsDataURL(entry.src);
-                imageCache.current.set(entry.src, dataUrl);
-                entry.imageLoaded(dataUrl);
-
-                // console.log(`$$ Image loaded: ${entry.src}`);
-
-                console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`)
+                await Promise.all(entries.map(async entry => {
+                    const cachedUrl = imageCache.current.get(entry.src);
+                    if (cachedUrl) {
+                        //
+                        // Loaded from cache.
+                        //
+                        entry.imageLoaded(cachedUrl);
+                        return;
+                    }
+                    
+                    const dataUrl = await loadImageAsDataURL(entry.src);
+                    imageCache.current.set(entry.src, dataUrl);
+                    entry.imageLoaded(dataUrl);
+    
+                    // console.log(`$$ Image loaded: ${entry.src}`);
+    
+                    console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`)
+                }));
 
                 await sleep(1); // Wait a bit to allow the UI to update.
             }
