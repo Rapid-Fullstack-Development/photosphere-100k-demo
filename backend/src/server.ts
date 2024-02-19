@@ -123,66 +123,66 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     // Uploads metadata for an asset and allocates a new asset id.
     //
-    app.post("/metadata", express.json(), async (req, res) => {
+    // app.post("/metadata", express.json(), async (req, res) => {
 
-        const metadata = req.body;
-        const fileName = getValue<string>(metadata, "fileName");
-        const width = getValue<number>(metadata, "width");
-        const height = getValue<number>(metadata, "height");
-        const hash = getValue<string>(metadata, "hash");
-        const fileDate = dayjs(getValue<string>(metadata, "fileDate")).toDate();
-        const labels = metadata.labels || [];
-        const photoDate = metadata.photoDate ? dayjs(metadata.photoDate).toDate() : undefined;
-        const uploadDate = now();
-        const sortDate = photoDate || fileDate || uploadDate;
-        const assetId = `${generateReverseChronoName(sortDate)}-${hash || "1"}`;
+    //     const metadata = req.body;
+    //     const fileName = getValue<string>(metadata, "fileName");
+    //     const width = getValue<number>(metadata, "width");
+    //     const height = getValue<number>(metadata, "height");
+    //     const hash = getValue<string>(metadata, "hash");
+    //     const fileDate = dayjs(getValue<string>(metadata, "fileDate")).toDate();
+    //     const labels = metadata.labels || [];
+    //     const photoDate = metadata.photoDate ? dayjs(metadata.photoDate).toDate() : undefined;
+    //     const uploadDate = now();
+    //     const sortDate = photoDate || fileDate || uploadDate;
+    //     const assetId = `${generateReverseChronoName(sortDate)}-${hash || "1"}`;
 
-        const newAsset: IAsset = {
-            _id: assetId,
-            origFileName: fileName,
-            width: width,
-            height: height,
-            hash: hash,
-            fileDate: fileDate,
-            photoDate: photoDate,
-            sortDate: sortDate,
-            uploadDate: uploadDate,
-            labels: labels,
-        };
+    //     const newAsset: IAsset = {
+    //         _id: assetId,
+    //         origFileName: fileName,
+    //         width: width,
+    //         height: height,
+    //         hash: hash,
+    //         fileDate: fileDate,
+    //         photoDate: photoDate,
+    //         sortDate: sortDate,
+    //         uploadDate: uploadDate,
+    //         labels: labels,
+    //     };
 
-        if (metadata.location) {
-            newAsset.location = metadata.location; 
-        }
+    //     if (metadata.location) {
+    //         newAsset.location = metadata.location; 
+    //     }
 
-        if (metadata.properties) {
-            newAsset.properties = metadata.properties;
-        }
+    //     if (metadata.properties) {
+    //         newAsset.properties = metadata.properties;
+    //     }
 
-        await writeMetadata(assetId, newAsset);
+    //     await writeMetadata(assetId, newAsset);
 
-        await updateHash(hash, assetId);
+    //     await updateHash(hash, assetId);
 
-        res.json({
-            assetId: assetId,
-        });
-    });
+    //     res.json({
+    //         assetId: assetId,
+    //     });
+    // });
 
     //
     // Uploads a new asset.
     //
-    app.post("/asset", async (req, res) => {
+    // app.post("/asset", async (req, res) => {
         
-        const assetId = getHeader(req, "id");
-        const contentType = getHeader(req, "content-type");
+    //     const assetId = getHeader(req, "id");
+    //     const contentType = getHeader(req, "content-type");
         
-        await storage.writeStream("original", assetId.toString(), contentType, req);
+    //     await storage.writeStream("original", assetId.toString(), contentType, req);
 
-        await updateMetadata(assetId, { assetContentType: contentType });
+    //     await updateMetadata(assetId, { assetContentType: contentType });
 
-        res.json({
-            assetId: assetId,
-        });
-    }); 
+    //     res.json({
+    //         assetId: assetId,
+    //     });
+    // }); 
 
     //
     // Gets a particular asset by id.
@@ -207,17 +207,17 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     // Uploads a thumbnail for a particular asset.
     //
-    app.post("/thumb", async (req, res) => {
+    // app.post("/thumb", async (req, res) => {
         
-        const assetId = getHeader(req, "id");
-        const contentType = getHeader(req, "content-type");
+    //     const assetId = getHeader(req, "id");
+    //     const contentType = getHeader(req, "content-type");
 
-        await storage.writeStream("thumb", assetId.toString(), contentType, req);
+    //     await storage.writeStream("thumb", assetId.toString(), contentType, req);
 
-        await updateMetadata(assetId, { thumbContentType: contentType });
+    //     await updateMetadata(assetId, { thumbContentType: contentType });
         
-        res.sendStatus(200);
-    });
+    //     res.sendStatus(200);
+    // });
 
     interface IThumbnail {
         contentType: string;
@@ -302,17 +302,17 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     // Uploads a display version for a particular asset.
     //
-    app.post("/display", async (req, res) => {
+    // app.post("/display", async (req, res) => {
         
-        const assetId = getHeader(req, "id");
-        const contentType = getHeader(req, "content-type");
+    //     const assetId = getHeader(req, "id");
+    //     const contentType = getHeader(req, "content-type");
         
-        await storage.writeStream("display", assetId.toString(), contentType, req);
+    //     await storage.writeStream("display", assetId.toString(), contentType, req);
 
-        await updateMetadata(assetId, { displayContentType: contentType });
+    //     await updateMetadata(assetId, { displayContentType: contentType });
         
-        res.sendStatus(200);
-    });
+    //     res.sendStatus(200);
+    // });
 
     //
     // Gets the display version for an asset by id.
@@ -340,72 +340,72 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     // Adds a label to an asset.
     //
-    app.post("/asset/add-label", express.json(), async (req, res) => {
+    // app.post("/asset/add-label", express.json(), async (req, res) => {
 
-        const id = getValue<string>(req.body, "id");
-        const label = getValue<string>(req.body, "label");
+    //     const id = getValue<string>(req.body, "id");
+    //     const label = getValue<string>(req.body, "label");
 
-        const metadata = await readMetadata(id);
-        if (!metadata.labels) {
-            metadata.labels = [];
-        }
-        metadata.labels.push(label);
-        await writeMetadata(id, metadata);
+    //     const metadata = await readMetadata(id);
+    //     if (!metadata.labels) {
+    //         metadata.labels = [];
+    //     }
+    //     metadata.labels.push(label);
+    //     await writeMetadata(id, metadata);
 
-        res.sendStatus(200);
-    });
+    //     res.sendStatus(200);
+    // });
 
     //
     // Removes a label from an asset.
     //
-    app.post("/asset/remove-label", express.json(), async (req, res) => {
+    // app.post("/asset/remove-label", express.json(), async (req, res) => {
 
-        const id = getValue<string>(req.body, "id");
-        const label = getValue<string>(req.body, "label");
+    //     const id = getValue<string>(req.body, "id");
+    //     const label = getValue<string>(req.body, "label");
 
-        const metadata = await readMetadata(id);
-        if (metadata.labels) {
-            metadata.labels = metadata.labels.filter(l => l !== label);
-            await writeMetadata(id, metadata);
-        }
+    //     const metadata = await readMetadata(id);
+    //     if (metadata.labels) {
+    //         metadata.labels = metadata.labels.filter(l => l !== label);
+    //         await writeMetadata(id, metadata);
+    //     }
 
-        res.sendStatus(200);
-    });
+    //     res.sendStatus(200);
+    // });
 
     //
     // Sets a description for the asset.
     //
-    app.post("/asset/description", express.json(), async (req, res) => {
+    // app.post("/asset/description", express.json(), async (req, res) => {
 
-        const id = getValue<string>(req.body, "id");
-        const description = getValue<string>(req.body, "description");
+    //     const id = getValue<string>(req.body, "id");
+    //     const description = getValue<string>(req.body, "description");
 
-        await updateMetadata(id, { description });
+    //     await updateMetadata(id, { description });
                 
-        res.sendStatus(200);
-    });
+    //     res.sendStatus(200);
+    // });
 
     //
     // Checks if an asset has already been upload by its hash.
     //
-    app.get("/check-asset", async (req, res) => {
+    // app.get("/check-asset", async (req, res) => {
 
-        const hash = req.query.hash as string;
-        if (!hash) {
-            throw new Error(`Hash not specified in query parameters.`);
-        }
+    //     const hash = req.query.hash as string;
+    //     if (!hash) {
+    //         throw new Error(`Hash not specified in query parameters.`);
+    //     }
 
-        // Read the hash map.
-        const assetId = await readHash(hash);
-        if (assetId) {
-            // The asset exists.
-            res.json({ assetId: assetId });
-        }
-        else {
-            // The asset doesn't exist.
-            res.json({ assetId: undefined });
-        }
-    });
+    //     // Read the hash map.
+    //     const assetId = await readHash(hash);
+    //     if (assetId) {
+    //         // The asset exists.
+    //         res.json({ assetId: assetId });
+    //     }
+    //     else {
+    //         // The asset doesn't exist.
+    //         res.json({ assetId: undefined });
+    //     }
+    // });
 
     //
     // Assets cached in memory to test the difference that it makes loading assets from S3.

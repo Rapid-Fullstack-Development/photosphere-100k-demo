@@ -11,11 +11,6 @@ export interface IGalleryItemContext {
     asset: IGalleryItem;
 
     //
-    // Set the asset currently loaded.
-    //
-    setAsset(asset: IGalleryItem): void;
-
-    //
     // Sets the description on the asset.
     //
     setDescription(description: string): Promise<void>;
@@ -61,7 +56,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     //
     // Interface to the gallery.
     //
-    const { assets, updateAsset } = useGallery();
+    const { assets, updateAsset: _updateAsset } = useGallery();
 
     //
     // The asset being edited.
@@ -71,25 +66,36 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     //
     // Debounces the update of the description.
     //
-    useEffect(() => {
+    // useEffect(() => {
 
-        console.log(`Triggered timeout to update description asset ${_asset._id}`);
+    //     console.log(`Triggered timeout to update description asset ${_asset._id}`);
 
-        const timeout = setTimeout(() => {
-            console.log(`Updating description for asset ${_asset._id}`);
-            api.setDescription(_asset._id, _asset.description || "")
-                .catch(err => {
-                    console.error(`Failed to update description for asset ${_asset._id}:`);
-                    console.error(err)
-                });
-        }, 1000);
+    //     const timeout = setTimeout(() => {
+    //         console.log(`Updating description for asset ${_asset._id}`);
+    //         api.setDescription(_asset._id, _asset.description || "")
+    //             .catch(err => {
+    //                 console.error(`Failed to update description for asset ${_asset._id}:`);
+    //                 console.error(err)
+    //             });
+    //     }, 1000);
 
-        return () => {
-            console.log(`Clearing the timeout for description update.`);
-            clearTimeout(timeout);
-        };
+    //     return () => {
+    //         console.log(`Clearing the timeout for description update.`);
+    //         clearTimeout(timeout);
+    //     };
 
-    }, [_asset.description]);
+    // }, [_asset.description]);
+
+    //
+    // Updates certain fields on the asset.
+    //
+    function updateAsset(assetIndex: number, assetUpdate: Partial<IGalleryItem>): void {
+        setAsset({ 
+            ...asset,
+            ...assetUpdate,
+        });
+        _updateAsset(assetIndex, assetUpdate);
+    }
 
     //
     // Sets the description on the asset.
@@ -109,7 +115,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     //
     async function addLabel(label: string): Promise<void> {
 
-        await api.addLabel(_asset._id, label);
+        // await api.addLabel(_asset._id, label);
 
         updateAsset(assetIndex, {
             labels: [
@@ -124,7 +130,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
     //
     async function removeLabel(label: string): Promise<void> {
 
-        await api.removeLabel(_asset._id, label);
+        // await api.removeLabel(_asset._id, label);
 
         updateAsset(assetIndex, {
             labels: (_asset.labels || []).filter(x => x !== label),

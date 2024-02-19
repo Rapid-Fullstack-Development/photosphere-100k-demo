@@ -43,27 +43,27 @@ export interface IApiContext {
     //
     // Check if an asset is already uploaded using its hash.
     //
-    checkAsset(hash: string): Promise<string | undefined>;
+    // checkAsset(hash: string): Promise<string | undefined>;
 
     //
     // Uploads an asset to the backend.
     //
-    uploadAsset(asset: IUploadDetails): Promise<string>;
+    // uploadAsset(asset: IUploadDetails): Promise<string>;
 
     //
     // Adds a label to an asset.
     //
-    addLabel(id: string, labelName: string): Promise<void>;
+    // addLabel(id: string, labelName: string): Promise<void>;
 
     //
     // Renmoves a label from an asset.
     //
-    removeLabel(id: string, labelName: string): Promise<void>;
+    // removeLabel(id: string, labelName: string): Promise<void>;
 
     //
     // Sets a description for an asset.
     //
-    setDescription(id: string, description: string): Promise<void>;
+    // setDescription(id: string, description: string): Promise<void>;
 
 }
 
@@ -169,166 +169,166 @@ export function ApiContextProvider({ children }: IProps) {
     //
     // Check if an asset is already uploaded using its hash.
     //
-    async function checkAsset(hash: string): Promise<string | undefined> {
-        // const apiKey = await getApiKey();
-        const url = `${BASE_URL}/check-asset?hash=${hash}`;
-        const response = await axios.get(
-            url, 
-            {
-                // headers: {
-                //     "key": apiKey,
-                // },
-            }
-        );
-        return response.data.assetId;
-    }
+    // async function checkAsset(hash: string): Promise<string | undefined> {
+    //     // const apiKey = await getApiKey();
+    //     const url = `${BASE_URL}/check-asset?hash=${hash}`;
+    //     const response = await axios.get(
+    //         url, 
+    //         {
+    //             // headers: {
+    //             //     "key": apiKey,
+    //             // },
+    //         }
+    //     );
+    //     return response.data.assetId;
+    // }
 
     //
     // Uploads an asset to the backend.
     //
-    async function uploadAsset(uploadDetails: IUploadDetails): Promise<string> {
-        //
-        // Uploads the full asset and metadata.
-        //
-        // const apiKey = await getApiKey();
+    // async function uploadAsset(uploadDetails: IUploadDetails): Promise<string> {
+    //     //
+    //     // Uploads the full asset and metadata.
+    //     //
+    //     // const apiKey = await getApiKey();
 
-        const { data } = await axios.post(
-            `${BASE_URL}/metadata`, 
-            {
-                fileName: uploadDetails.fileName,
-                width: uploadDetails.resolution.width,
-                height: uploadDetails.resolution.height,
-                hash: uploadDetails.hash,
-                properties: uploadDetails.properties,
-                location: uploadDetails.location,
-                fileDate: uploadDetails.fileDate,
-                photoDate: uploadDetails.photoDate,
-                labels: uploadDetails.labels,
-            },
-            {
-                // headers: {
-                //     "key": apiKey,
-                // },
-            }
-        );
+    //     const { data } = await axios.post(
+    //         `${BASE_URL}/metadata`, 
+    //         {
+    //             fileName: uploadDetails.fileName,
+    //             width: uploadDetails.resolution.width,
+    //             height: uploadDetails.resolution.height,
+    //             hash: uploadDetails.hash,
+    //             properties: uploadDetails.properties,
+    //             location: uploadDetails.location,
+    //             fileDate: uploadDetails.fileDate,
+    //             photoDate: uploadDetails.photoDate,
+    //             labels: uploadDetails.labels,
+    //         },
+    //         {
+    //             // headers: {
+    //             //     "key": apiKey,
+    //             // },
+    //         }
+    //     );
 
-        const { assetId } = data;
+    //     const { assetId } = data;
 
-        //
-        // Uploads the full asset.
-        //
-        await axios.post(
-            `${BASE_URL}/asset`, 
-            uploadDetails.file, 
-            {
-                headers: {
-                    "content-type": uploadDetails.assetContentType,
-                    "id": assetId,
-                    // "key": apiKey,
-                },
-            }
-        );
+    //     //
+    //     // Uploads the full asset.
+    //     //
+    //     await axios.post(
+    //         `${BASE_URL}/asset`, 
+    //         uploadDetails.file, 
+    //         {
+    //             headers: {
+    //                 "content-type": uploadDetails.assetContentType,
+    //                 "id": assetId,
+    //                 // "key": apiKey,
+    //             },
+    //         }
+    //     );
 
-        //
-        // Uploads the thumbnail separately for simplicity and no restriction on size (e.g. if it were passed as a header).
-        //
-        const thumnailBlob = base64StringToBlob(uploadDetails.thumbnail, uploadDetails.thumbContentType);
-        await axios.post(
-            `${BASE_URL}/thumb`, 
-            thumnailBlob, 
-            {
-                headers: {
-                    "content-type": uploadDetails.thumbContentType,
-                    "id": assetId,
-                    // "key": apiKey,
-                },
-            }
-        );
+    //     //
+    //     // Uploads the thumbnail separately for simplicity and no restriction on size (e.g. if it were passed as a header).
+    //     //
+    //     const thumnailBlob = base64StringToBlob(uploadDetails.thumbnail, uploadDetails.thumbContentType);
+    //     await axios.post(
+    //         `${BASE_URL}/thumb`, 
+    //         thumnailBlob, 
+    //         {
+    //             headers: {
+    //                 "content-type": uploadDetails.thumbContentType,
+    //                 "id": assetId,
+    //                 // "key": apiKey,
+    //             },
+    //         }
+    //     );
 
-        //
-        // Uploads the display asset separately for simplicity and no restriction on size.
-        //
-        const displayBlob = base64StringToBlob(uploadDetails.display, uploadDetails.displayContentType);
-        await axios.post(
-            `${BASE_URL}/display`, 
-            displayBlob, 
-            {
-                headers: {
-                    "content-type": uploadDetails.displayContentType,
-                    "id": assetId,
-                    // "key": apiKey,
-                },
-            }
-        );
+    //     //
+    //     // Uploads the display asset separately for simplicity and no restriction on size.
+    //     //
+    //     const displayBlob = base64StringToBlob(uploadDetails.display, uploadDetails.displayContentType);
+    //     await axios.post(
+    //         `${BASE_URL}/display`, 
+    //         displayBlob, 
+    //         {
+    //             headers: {
+    //                 "content-type": uploadDetails.displayContentType,
+    //                 "id": assetId,
+    //                 // "key": apiKey,
+    //             },
+    //         }
+    //     );
 
-        return assetId;
-    }
+    //     return assetId;
+    // }
     
 
     //
     // Adds a label to an asset.
     //
-    async function addLabel(id: string, labelName: string): Promise<void> {
-        // const apiKey = await getApiKey();
-        await axios.post(`${BASE_URL}/asset/add-label`, 
-            {
-                id: id,
-                label: labelName,
-            },
-            {
-                // headers: {
-                //     "key": apiKey,
-                // },
-            }
-        );
-    }
+    // async function addLabel(id: string, labelName: string): Promise<void> {
+    //     // const apiKey = await getApiKey();
+    //     await axios.post(`${BASE_URL}/asset/add-label`, 
+    //         {
+    //             id: id,
+    //             label: labelName,
+    //         },
+    //         {
+    //             // headers: {
+    //             //     "key": apiKey,
+    //             // },
+    //         }
+    //     );
+    // }
 
     //
     // Renmoves a label from an asset.
     //
-    async function removeLabel(id: string, labelName: string): Promise<void> {
-        // const apiKey = await getApiKey();
-        await axios.post(
-            `${BASE_URL}/asset/remove-label`, 
-            {
-                id: id,
-                label: labelName,
-            },
-            {
-                // headers: {
-                //     "key": apiKey,
-                // },
-            }
-        );
-    }
+    // async function removeLabel(id: string, labelName: string): Promise<void> {
+    //     // const apiKey = await getApiKey();
+    //     await axios.post(
+    //         `${BASE_URL}/asset/remove-label`, 
+    //         {
+    //             id: id,
+    //             label: labelName,
+    //         },
+    //         {
+    //             // headers: {
+    //             //     "key": apiKey,
+    //             // },
+    //         }
+    //     );
+    // }
 
     //
     // Sets a description for an asset.
     //
-    async function setDescription(id: string, description: string): Promise<void> {
-        // const apiKey = await getApiKey();
-        await axios.post(
-            `${BASE_URL}/asset/description`, 
-            {
-                id: id,
-                description: description,
-            },
-            {
-                // headers: {
-                //     "key": apiKey,
-                // },
-            }
-        );
-    }   
+    // async function setDescription(id: string, description: string): Promise<void> {
+    //     // const apiKey = await getApiKey();
+    //     await axios.post(
+    //         `${BASE_URL}/asset/description`, 
+    //         {
+    //             id: id,
+    //             description: description,
+    //         },
+    //         {
+    //             // headers: {
+    //             //     "key": apiKey,
+    //             // },
+    //         }
+    //     );
+    // }   
 
     const value: IApiContext = {
         makeUrl,
         getAssets,
-        checkAsset,
-        uploadAsset,
-        addLabel,
-        removeLabel,
-        setDescription,
+        // checkAsset,
+        // uploadAsset,
+        // addLabel,
+        // removeLabel,
+        // setDescription,
     };
     
     return (
