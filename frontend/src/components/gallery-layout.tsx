@@ -87,7 +87,7 @@ function findVisibleRange(galleryLayout: IGalleryLayout | undefined, scrollTop: 
         return undefined;
     }
     
-    const buffer = 1; // Number of items to render outside the viewport, above and below
+    const buffer = 5; // Number of items to render outside the viewport, above and below
     const startIndex = Math.max(0, galleryLayout.rows.findIndex(row => row.offsetY >= scrollTop) - buffer);
 
     let endIndex = startIndex+1;
