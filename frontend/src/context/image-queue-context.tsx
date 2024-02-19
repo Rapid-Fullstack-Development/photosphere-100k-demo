@@ -68,15 +68,23 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     const lowPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
 
-    //
-    // Number of references to each image.
-    //
-    const imageRefs = useRef<Map<string, number>>(new Map<string, number>());
+    interface IImageCacheEntry {
+        //
+        // Number of references to the image.
+        //
+        numRefs: number;
+
+        //
+        // The data url of the image.
+        // Set to undefined while waiting for the load.
+        //
+        data: string | undefined;
+    };
 
     //
     // Cache of images that have been loaded.
     //
-    const imageCache = useRef<Map<string, string>>(new Map<string, string>);
+    const imageCache = useRef<Map<string, IImageCacheEntry>>(new Map<string, IImageCacheEntry>);
 
     //
     // Set to true when loading images.
@@ -103,22 +111,32 @@ export function ImageQueueContextProvider({ children }: IProps) {
                     : lowPriorityImageQueueRef.current.splice(0, 5);
                 
                 await Promise.all(entries.map(async entry => {
-                    const cachedUrl = imageCache.current.get(entry.src);
-                    if (cachedUrl) {
+                    const cachedEntry = imageCache.current.get(entry.src);
+                    if (!cachedEntry) {
                         //
-                        // Loaded from cache.
+                        // This image is no longer cached.
                         //
-                        entry.imageLoaded(cachedUrl);
                         return;
                     }
-                    
+
+                    if (cachedEntry.data !== undefined) {
+                        //
+                        // The image is satisfied from the cache.
+                        //
+                        entry.imageLoaded(cachedEntry.data);
+                        return;
+                    }
+
+                    //
+                    // Load the image.
+                    //
                     const dataUrl = await loadImageAsDataURL(entry.src);
-                    imageCache.current.set(entry.src, dataUrl);
+                    cachedEntry.data = dataUrl;;
                     entry.imageLoaded(dataUrl);
     
                     // console.log(`$$ Image loaded: ${entry.src}`);
     
-                    console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`)
+                    // console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`);
                 }));
 
                 await sleep(1); // Wait a bit to allow the UI to update.
@@ -142,18 +160,24 @@ export function ImageQueueContextProvider({ children }: IProps) {
         //
         // Reference count the image.
         //
-        imageRefs.current.set(src, (imageRefs.current.get(src) || 0) + 1);
+        const cacheEntry = imageCache.current.get(src);
+        if (cacheEntry !== undefined) {
+            // Add new reference..
+            cacheEntry.numRefs += 1;
 
-        //
-        // If the image is already loaded, return it.
-        //
-        const cached = imageCache.current.get(src);
-        if (cached) {
-            // console.log(`$$ Image loaded from cache: ${src}`);
-            imageLoaded(cached);
-            return;
+            if (cacheEntry.data) {
+                imageLoaded(cacheEntry.data);
+                return;
+            }
         }
-
+        else {
+            // First reference.
+            imageCache.current.set(src, {
+                numRefs: 1,
+                data: undefined, // Not yet loaded.
+            });
+        }
+        
         // console.log(`$$ Image queued for loading: ${src}`);
 
         //
@@ -171,23 +195,21 @@ export function ImageQueueContextProvider({ children }: IProps) {
     // Unloads the image.
     //
     function unloadImage(src: string): void {
+
         //
         // Reference count the image.
         //
-        let refCount = imageRefs.current.get(src);
-        if (refCount === undefined) {
+        let cacheEntry = imageCache.current.get(src);
+        if (cacheEntry === undefined) {
+            // Image wasn't loaded.
             return;
         }
 
-        refCount -= 1;
-        if (refCount > 0) {
-            imageRefs.current.set(src, refCount);
-        }
-        else {
-            imageRefs.current.delete(src);
+        cacheEntry.numRefs -= 1;
+        if (cacheEntry.numRefs <= 0) {
             imageCache.current.delete(src);
 
-            console.log(`$$ Image removed, total cached images ${imageCache.current.size}`)
+            // console.log(`$$ Image removed, total cached images ${imageCache.current.size}`);
         }
     }
 
