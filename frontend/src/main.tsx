@@ -297,8 +297,8 @@ export function Main() {
             <FPSStats 
                 top="auto"
                 left="auto"
-                right={0}
-                bottom={0}
+                right={30}
+                bottom={5}
                 />
 
         </>

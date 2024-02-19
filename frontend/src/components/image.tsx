@@ -47,12 +47,16 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
 
     const [imageDataUrl, setImageDataUrl] = useState<string>("");
 
-    const { loadImageAsDataUrl } = useImageQueue();
+    const { loadImage, unloadImage } = useImageQueue();
 
     useEffect(() => {
-        loadImageAsDataUrl(src, imageDataUrl => {
+        loadImage(src, imageDataUrl => {
             setImageDataUrl(imageDataUrl);
         });
+
+        return () => {
+            unloadImage(src);
+        };
     }, [src]);
 
     return (

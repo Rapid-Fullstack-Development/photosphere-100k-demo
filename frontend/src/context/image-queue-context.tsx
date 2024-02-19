@@ -12,12 +12,22 @@ export interface IImageQueueContext {
     //
     // Loads an image to a data url.
     //
-    loadImageAsDataUrl(src: string, imageLoaded: ImageLoadedFn): void;
+    loadImage(src: string, imageLoaded: ImageLoadedFn): void;
+
+    //
+    // Unloads the image.
+    //
+    unloadImage(src: string): void;
 
     //
     // Resets the queue for rerender.
     //
     resetQueue(): void;
+
+    //
+    // The number of images in the cache.
+    //
+    numChangedImages(): number;
 }
 
 
@@ -59,6 +69,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
     const lowPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
 
     //
+    // Number of references to each image.
+    //
+    const imageRefs = useRef<Map<string, number>>(new Map<string, number>());
+
+    //
     // Cache of images that have been loaded.
     //
     const imageCache = useRef<Map<string, string>>(new Map<string, string>);
@@ -86,11 +101,23 @@ export function ImageQueueContextProvider({ children }: IProps) {
                 const entry = highPriorityImageQueueRef.current.length > 0 
                     ? highPriorityImageQueueRef.current.shift()!
                     : lowPriorityImageQueueRef.current.shift()!;
+                
+                const cachedUrl = imageCache.current.get(entry.src);
+                if (cachedUrl) {
+                    //
+                    // Loaded from cache.
+                    //
+                    entry.imageLoaded(cachedUrl);
+                    continue;
+                }
+                
                 const dataUrl = await loadImageAsDataURL(entry.src);
                 imageCache.current.set(entry.src, dataUrl);
                 entry.imageLoaded(dataUrl);
 
                 // console.log(`$$ Image loaded: ${entry.src}`);
+
+                console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`)
 
                 await sleep(1); // Wait a bit to allow the UI to update.
             }
@@ -109,7 +136,12 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     // Loads an image to a data url.
     //
-    function loadImageAsDataUrl(src: string, imageLoaded: ImageLoadedFn): void {
+    function loadImage(src: string, imageLoaded: ImageLoadedFn): void {
+        //
+        // Reference count the image.
+        //
+        imageRefs.current.set(src, (imageRefs.current.get(src) || 0) + 1);
+
         //
         // If the image is already loaded, return it.
         //
@@ -134,6 +166,30 @@ export function ImageQueueContextProvider({ children }: IProps) {
     }
 
     //
+    // Unloads the image.
+    //
+    function unloadImage(src: string): void {
+        //
+        // Reference count the image.
+        //
+        let refCount = imageRefs.current.get(src);
+        if (refCount === undefined) {
+            return;
+        }
+
+        refCount -= 1;
+        if (refCount > 0) {
+            imageRefs.current.set(src, refCount);
+        }
+        else {
+            imageRefs.current.delete(src);
+            imageCache.current.delete(src);
+
+            console.log(`$$ Image removed, total cached images ${imageCache.current.size}`)
+        }
+    }
+
+    //
     // Resets the queue for rerender.
     //
     function resetQueue() {
@@ -148,8 +204,10 @@ export function ImageQueueContextProvider({ children }: IProps) {
     }
 
     const value: IImageQueueContext = {
-        loadImageAsDataUrl,
+        loadImage,
+        unloadImage,
         resetQueue,
+        numChangedImages: () => imageCache.current.size,
     };
     
     return (

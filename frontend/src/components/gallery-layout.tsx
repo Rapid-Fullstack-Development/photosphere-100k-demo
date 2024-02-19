@@ -153,7 +153,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     const { searchText, firstPageLoaded } = useGallery();
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
-    const { resetQueue } = useImageQueue();
+    const { resetQueue, numChangedImages } = useImageQueue();
     
     //
     // Rebuild layout when necessary. 
@@ -218,7 +218,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     bottom: "60px",
                     right: "30px",
                     width: "200px",
-                    height: "100px",
+                    height: "120px",
                     color: "black",
                     backgroundColor: "white",
                     border: "1px solid black",
@@ -229,10 +229,13 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     Debug panel
                 </p>
                 <p>
-                    #rows: {galleryLayout?.rows.length}
+                    Rows: {galleryLayout?.rows.length}
                 </p>
                 <p>
-                    #photos: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
+                    Photos: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
+                </p>
+                <p>
+                    Cached images: {numChangedImages()}
                 </p>
             </div>
         </div>
