@@ -20,7 +20,7 @@ export function AboutPage() {
                 </p>
                 <p className="pt-4">
                     This software is open source. The current version is highly experimental and not ready for general use, but in the future
-                    I do hope that other people will use this software to manage their own digital assets. If you think you might like to use Photosphere in the future, <a href="mailto:ashley@codecapers.com.au">please send me an email</a>.
+                    I do hope that other people will use this software to manage their own digital assets. If you think you might like to use Photosphere in the future, please send me an email on <a href="mailto:ashley@codecapers.com.au">ashley@codecapers.com.au</a>.
                 </p>
                 <p className="pt-4">
                     The big concept of Photosphere is that you bring your own storage. You bring cloud storage from one of the major cloud vendors,
