@@ -52,7 +52,7 @@ export function UploadPage() {
     }
 
     return (
-        <div className="w-full h-full p-4 overflow-y-auto">
+        <div className="w-full h-full p-4 overflow-y-auto relative">
             <div 
                 id="upload-drop-area"
                 className={dragOver ? "highlight" : ""}
@@ -203,6 +203,16 @@ export function UploadPage() {
                     }
                 </>
             }
+
+            {/* Full screen semi transparent overload that shows that upload is disabled for this public demo. */}
+            <div 
+                className="absolute inset-0 bg-white bg-opacity-50 flex items-start justify-center pt-6"
+                >
+                <div className="text-3xl text-center">
+                    <p>Upload is disabled for this public demo.</p>
+                    <p>A user hostable version will be released in the future.</p>
+                </div>
+            </div>
         </div>
     );
 }

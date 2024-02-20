@@ -265,130 +265,130 @@ export function UploadContextProvider({ children }: IProps) {
     //
     async function uploadFile(nextUpload: IQueuedUpload, uploadIndex: number): Promise<void> {
 
-        updateUpload({ numAttempts: nextUpload.numAttempts + 1 }, uploadIndex);
+        // updateUpload({ numAttempts: nextUpload.numAttempts + 1 }, uploadIndex);
 
-        // if (nextUpload.numAttempts === 1) {
-        //     // Blow up on the first attempt
-        //     throw new Error("Smeg");
+        // // if (nextUpload.numAttempts === 1) {
+        // //     // Blow up on the first attempt
+        // //     throw new Error("Smeg");
+        // // }
+
+        // const hash = await computeHash(nextUpload.file);
+        // const existingAssetId = await api.checkAsset(hash);
+        // if (existingAssetId) {
+        //     console.log(`Already uploaded ${nextUpload.fileName} with hash ${hash}, uploaded to ${existingAssetId}`);
+
+        //     setUploadStatus("already-uploaded", uploadIndex);
+        //     setNumUploaded(numUploaded + 1);
+        //     setNumAlreadyUploaded(numAlreadyUploaded + 1);
         // }
+        // else {
+        //     //
+        //     // Load the image and generate thumbnail, etc. 
+        //     // Don't hold any of this data in memory longer than necessary
+        //     // otherwise we get an out of memory error when trying to
+        //     // upload 1000s of assets.
+        //     //
+        //     const imageData = await loadDataURL(nextUpload.file);
+        //     const image = await loadImage(imageData);
+        //     const imageResolution = await getImageResolution(image);
+        //     const thumbnailDataUrl = resizeImage(image, THUMBNAIL_MIN_SIZE);
+        //     const contentTypeStart = 5;
+        //     const thumbContentTypeEnd = thumbnailDataUrl.indexOf(";", contentTypeStart);
+        //     const thumbContentType = thumbnailDataUrl.slice(contentTypeStart, thumbContentTypeEnd);
+        //     const thumbnailData = thumbnailDataUrl.slice(thumbContentTypeEnd + 1 + "base64,".length);
+        //     const displayDataUrl = resizeImage(image, DISPLAY_MIN_SIZE);
+        //     const displayContentTypeEnd = displayDataUrl.indexOf(";", contentTypeStart);
+        //     const displayContentType = displayDataUrl.slice(contentTypeStart, displayContentTypeEnd);
+        //     const displayData = displayDataUrl.slice(displayContentTypeEnd + 1 + "base64,".length);
+        //     const exif = await getExifData(nextUpload.file);
 
-        const hash = await computeHash(nextUpload.file);
-        const existingAssetId = await api.checkAsset(hash);
-        if (existingAssetId) {
-            console.log(`Already uploaded ${nextUpload.fileName} with hash ${hash}, uploaded to ${existingAssetId}`);
+        //     const uploadDetails: IUploadDetails = {
+        //         ...nextUpload,
+        //         resolution: imageResolution,
+        //         thumbnail: thumbnailData,
+        //         thumbContentType: thumbContentType,
+        //         display: displayData,
+        //         displayContentType: displayContentType,
+        //         hash: hash,
+        //     };
 
-            setUploadStatus("already-uploaded", uploadIndex);
-            setNumUploaded(numUploaded + 1);
-            setNumAlreadyUploaded(numAlreadyUploaded + 1);
-        }
-        else {
-            //
-            // Load the image and generate thumbnail, etc. 
-            // Don't hold any of this data in memory longer than necessary
-            // otherwise we get an out of memory error when trying to
-            // upload 1000s of assets.
-            //
-            const imageData = await loadDataURL(nextUpload.file);
-            const image = await loadImage(imageData);
-            const imageResolution = await getImageResolution(image);
-            const thumbnailDataUrl = resizeImage(image, THUMBNAIL_MIN_SIZE);
-            const contentTypeStart = 5;
-            const thumbContentTypeEnd = thumbnailDataUrl.indexOf(";", contentTypeStart);
-            const thumbContentType = thumbnailDataUrl.slice(contentTypeStart, thumbContentTypeEnd);
-            const thumbnailData = thumbnailDataUrl.slice(thumbContentTypeEnd + 1 + "base64,".length);
-            const displayDataUrl = resizeImage(image, DISPLAY_MIN_SIZE);
-            const displayContentTypeEnd = displayDataUrl.indexOf(";", contentTypeStart);
-            const displayContentType = displayDataUrl.slice(contentTypeStart, displayContentTypeEnd);
-            const displayData = displayDataUrl.slice(displayContentTypeEnd + 1 + "base64,".length);
-            const exif = await getExifData(nextUpload.file);
+        //     if (exif) {
+        //         uploadDetails.properties = {
+        //             exif: exif,
+        //         };
 
-            const uploadDetails: IUploadDetails = {
-                ...nextUpload,
-                resolution: imageResolution,
-                thumbnail: thumbnailData,
-                thumbContentType: thumbContentType,
-                display: displayData,
-                displayContentType: displayContentType,
-                hash: hash,
-            };
+        //         if (exif.GPSLatitude && exif.GPSLongitude) {
+        //             const location = convertExifCoordinates(exif);
+        //             if (isLocationInRange(location)) {
+        //                 uploadDetails.location = await retry(() => reverseGeocode(location), 3, 5000);
+        //             }
+        //             else {
+        //                 console.error(`Ignoring out of range GPS coordinates: ${JSON.stringify(location)}, for asset ${uploadDetails.fileName}.`);
+        //             }
+        //         }
 
-            if (exif) {
-                uploadDetails.properties = {
-                    exif: exif,
-                };
+        //         const dateFields = ["DateTime", "DateTimeOriginal", "DateTimeDigitized"];
+        //         for (const dateField of dateFields) {
+        //             const dateStr = exif[dateField];
+        //             if (dateStr) {
+        //                 try {
+        //                     uploadDetails.photoDate = dayjs(dateStr, "YYYY:MM:DD HH:mm:ss").toISOString();
+        //                 }
+        //                 catch (err) {
+        //                     console.error(`Failed to parse date from ${dateStr}`);
+        //                     console.error(err);
+        //                 }
+        //             }
+        //         }
+        //     }
 
-                if (exif.GPSLatitude && exif.GPSLongitude) {
-                    const location = convertExifCoordinates(exif);
-                    if (isLocationInRange(location)) {
-                        uploadDetails.location = await retry(() => reverseGeocode(location), 3, 5000);
-                    }
-                    else {
-                        console.error(`Ignoring out of range GPS coordinates: ${JSON.stringify(location)}, for asset ${uploadDetails.fileName}.`);
-                    }
-                }
+        //     //
+        //     // Add the month and year as labels.
+        //     //
+        //     const photoDate = uploadDetails.photoDate || uploadDetails.fileDate;
+        //     const month = dayjs(photoDate).format("MMMM");
+        //     const year = dayjs(photoDate).format("YYYY");
+        //     uploadDetails.labels = [month, year].concat(uploadDetails.labels);
 
-                const dateFields = ["DateTime", "DateTimeOriginal", "DateTimeDigitized"];
-                for (const dateField of dateFields) {
-                    const dateStr = exif[dateField];
-                    if (dateStr) {
-                        try {
-                            uploadDetails.photoDate = dayjs(dateStr, "YYYY:MM:DD HH:mm:ss").toISOString();
-                        }
-                        catch (err) {
-                            console.error(`Failed to parse date from ${dateStr}`);
-                            console.error(err);
-                        }
-                    }
-                }
-            }
+        //     //
+        //     // Remove duplicate labels, in case month/year already added.
+        //     //
+        //     uploadDetails.labels = removeDuplicates(uploadDetails.labels);
 
-            //
-            // Add the month and year as labels.
-            //
-            const photoDate = uploadDetails.photoDate || uploadDetails.fileDate;
-            const month = dayjs(photoDate).format("MMMM");
-            const year = dayjs(photoDate).format("YYYY");
-            uploadDetails.labels = [month, year].concat(uploadDetails.labels);
+        //     const assetId = await api.uploadAsset(uploadDetails);
+        //     console.log(`Uploaded ${assetId}`);
 
-            //
-            // Remove duplicate labels, in case month/year already added.
-            //
-            uploadDetails.labels = removeDuplicates(uploadDetails.labels);
-
-            const assetId = await api.uploadAsset(uploadDetails);
-            console.log(`Uploaded ${assetId}`);
-
-            //
-            // Update upload state.
-            //
-            updateUpload({ status: "uploaded", assetId }, uploadIndex);
+        //     //
+        //     // Update upload state.
+        //     //
+        //     updateUpload({ status: "uploaded", assetId }, uploadIndex);
         
-            //
-            // Increment the number uploaded.
-            //
-            setNumUploaded(numUploaded + 1);
+        //     //
+        //     // Increment the number uploaded.
+        //     //
+        //     setNumUploaded(numUploaded + 1);
 
-            //
-            // Add asset to the gallery.
-            //
-            const sortDate = uploadDetails.photoDate || uploadDetails.fileDate;
-            addAsset({
-                _id: assetId,
-                width: imageResolution.width,
-                height: imageResolution.height,
-                origFileName: uploadDetails.fileName,
-                hash: uploadDetails.hash,
-                location: uploadDetails.location,
-                fileDate: uploadDetails.fileDate,
-                photoDate: uploadDetails.photoDate,
-                sortDate: sortDate,
-                group: dayjs(sortDate).format("MMM, YYYY"),
-                uploadDate: dayjs(new Date()).format(),
-                properties: uploadDetails.properties,
-                labels: uploadDetails.labels,
-                description: "",
-            });
-        }
+        //     //
+        //     // Add asset to the gallery.
+        //     //
+        //     const sortDate = uploadDetails.photoDate || uploadDetails.fileDate;
+        //     addAsset({
+        //         _id: assetId,
+        //         width: imageResolution.width,
+        //         height: imageResolution.height,
+        //         origFileName: uploadDetails.fileName,
+        //         hash: uploadDetails.hash,
+        //         location: uploadDetails.location,
+        //         fileDate: uploadDetails.fileDate,
+        //         photoDate: uploadDetails.photoDate,
+        //         sortDate: sortDate,
+        //         group: dayjs(sortDate).format("MMM, YYYY"),
+        //         uploadDate: dayjs(new Date()).format(),
+        //         properties: uploadDetails.properties,
+        //         labels: uploadDetails.labels,
+        //         description: "",
+        //     });
+        // }
     }
 
     //
