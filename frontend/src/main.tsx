@@ -8,6 +8,7 @@ import { UploadPage } from "./pages/upload";
 import { useGallery } from "./context/gallery-context";
 import { GalleryItemContextProvider } from "./context/gallery-item-context";
 import { useUpload } from "./context/upload-context";
+import { AboutPage } from "./pages/about";
 const FPSStats = require("react-fps-stats").default;
 
 //
@@ -134,8 +135,18 @@ export function Main() {
                             </div>
                         </NavLink>
 
+                        <NavLink
+                            className="ml-auto mr-3"
+                            to="/about"
+                        >
+                            <div className="flex flex-row items-center">
+                                <i className="w-5 text-center fa-solid fa-circle-info"></i>
+                                <div className="hidden sm:block ml-2">About</div>
+                            </div>
+                        </NavLink>
+
                         {(isUploading || numScans > 0)
-                            && <div className="ml-auto flex flex-row items-center">
+                            && <div className="flex flex-row items-center">
                                 <span className="hidden sm:block">Uploading</span>
                                 <div className="mx-2">
                                     <Spinner show={true} />
@@ -257,6 +268,11 @@ export function Main() {
                         <Route 
                             path="/upload" 
                             element={<UploadPage />} 
+                            />
+
+                        <Route 
+                            path="/about" 
+                            element={<AboutPage />} 
                             />
 
                         <Route

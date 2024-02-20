@@ -1,6 +1,7 @@
 import React, { useState, DragEvent } from "react";
 import { useUpload } from "../context/upload-context";
 import { Spinner } from "../components/spinner";
+import { NavLink } from "react-router-dom";
 
 export function UploadPage() {
 
@@ -208,9 +209,10 @@ export function UploadPage() {
             <div 
                 className="absolute inset-0 bg-white bg-opacity-50 flex items-start justify-center pt-6"
                 >
-                <div className="text-3xl text-center">
+                <div className="text-xl text-center">
                     <p>Upload is disabled for this public demo.</p>
                     <p>A user hostable version will be released in the future.</p>
+                    <p>See the <NavLink to="/about">About</NavLink> page for more information.</p>
                 </div>
             </div>
         </div>
