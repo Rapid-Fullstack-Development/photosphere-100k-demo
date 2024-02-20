@@ -207,12 +207,12 @@ export function UploadPage() {
 
             {/* Full screen semi transparent overload that shows that upload is disabled for this public demo. */}
             <div 
-                className="absolute inset-0 bg-white bg-opacity-50 flex items-start justify-center pt-6"
+                className="absolute inset-0 bg-black bg-opacity-60 flex items-start justify-center pt-6"
                 >
-                <div className="text-xl text-center">
+                <div className="text-white text-base text-center p-1">
                     <p>Upload is disabled for this public demo.</p>
-                    <p>A user hostable version will be released in the future.</p>
-                    <p>See the <NavLink to="/about">About</NavLink> page for more information.</p>
+                    <p>A user hostable version of Photosphere is planned for the future.</p>
+                    <p>See the <NavLink className="text-white visited:text-white" to="/about">About</NavLink> page for more information.</p>
                 </div>
             </div>
         </div>
