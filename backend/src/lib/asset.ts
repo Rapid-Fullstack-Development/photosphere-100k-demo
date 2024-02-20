@@ -30,6 +30,11 @@ export interface IMinimalAsset {
     // Description of the asset, once the user has set it.
     //
     description?: string;
+
+    //
+    // The data by which to sort the asset.
+    //
+    sortDate: string;
 }
 
 //

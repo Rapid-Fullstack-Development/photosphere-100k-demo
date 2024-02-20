@@ -428,6 +428,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
                     height: asset.height,
                     description: asset.description,
                     labels: asset.labels,
+                    sortDate: asset.sortDate,
                 };
             }
         ));
