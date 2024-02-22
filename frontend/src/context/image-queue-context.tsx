@@ -11,6 +11,21 @@ export type ImageLoadedFn = (dataUrl: string) => void;
 export interface IImageQueueContext {
 
     //
+    // Clear the queue reader for a new set of images to load.
+    //
+    clearQueue(): void;
+
+    //
+    // Queues an image to be loaded.
+    //
+    queueHighPriorityImage(assetId: string, assetIndex: number): void;
+
+    //
+    // Queues an image to be loaded.
+    //
+    queueLowPriorityImage(assetId: string, assetIndex: number): void;
+
+    //
     // Loads an image to a data url.
     //
     loadImage(assetId: string, assetIndex: number, imageLoaded: ImageLoadedFn): void;
@@ -21,14 +36,14 @@ export interface IImageQueueContext {
     unloadImage(assetIndex: number): void;
 
     //
-    // Resets the queue for rerender.
-    //
-    resetQueue(): void;
-
-    //
     // The number of images in the cache.
     //
     numChangedImages(): number;
+
+    //
+    // Loads the next set of images.
+    //
+    loadImages(): Promise<void>;
 }
 
 
@@ -41,27 +56,6 @@ export interface IProps {
     children: ReactNode | ReactNode[];
 }
 
-//
-// An entry in the image queue for an image to be loaded.
-//
-interface IImageQueueEntry {
-    //
-    // The id of the asset to be loaded.
-    //
-    assetId: string;
-
-    //
-    // The index of the asset to be loaded.
-    //
-    assetIndex: number;
-
-    //
-    // Callback to invoke when the image has been loaded.
-    //
-    imageLoaded: ImageLoadedFn;
-
-}
-
 export function ImageQueueContextProvider({ children }: IProps) {
 
     //
@@ -70,14 +64,29 @@ export function ImageQueueContextProvider({ children }: IProps) {
     const api = useApi();
 
     //
+    // An entry in the image queue for an image to be loaded.
+    //
+    interface IImageQueueEntry {
+        //
+        // The id of the asset to be loaded.
+        //
+        assetId: string;
+
+        //
+        // The index of the asset to be loaded.
+        //
+        assetIndex: number;
+    }
+
+    //
     // The queue of high priority images to be loaded.
     //
-    const highPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
+    const highPriorityImageQueue = useRef<Map<number, IImageQueueEntry>>(new Map<number, IImageQueueEntry>());
 
     //
     // The queue of lower priority images to be loaded.
     //
-    const lowPriorityImageQueueRef = useRef<IImageQueueEntry[]>([]);
+    const lowPriorityImageQueue = useRef<Map<number, IImageQueueEntry>>(new Map<number, IImageQueueEntry>());
 
     interface IImageCacheEntry {
         //
@@ -90,6 +99,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
         // Set to undefined while waiting for the load.
         //
         data: string | undefined;
+
+        //
+        // Callback to invoke when the image has been loaded.
+        //
+        imageLoaded?: ImageLoadedFn;
     };
 
     //
@@ -108,6 +122,65 @@ export function ImageQueueContextProvider({ children }: IProps) {
     const isLoadingRef = useRef<boolean>(false);
 
     //
+    // Load the next set of images.
+    //
+    async function loadNextImage(queue: Map<number, IImageQueueEntry>): Promise<void> {
+        const pair = queue.entries().next().value;
+        // console.log(`$$ Loading next queued image: ${pair[1].assetIndex}`);
+
+        queue.delete(pair[0]);
+
+        const entry = pair[1];
+        let cachedEntry = imageCache.current.get(entry.assetIndex);
+        if (cachedEntry === undefined) {
+            //
+            // This image is not cached yet.
+            //
+            cachedEntry = {
+                numRefs: 0, // No references yet.
+                data: undefined, // Not yet loaded.
+                imageLoaded: undefined, // No callbacks yet.
+            };
+            imageCache.current.set(entry.assetIndex, cachedEntry);
+        }
+        else {
+            if (cachedEntry.data !== undefined) {
+                // 
+                // Already loaded.
+                //
+                return;
+            }
+        }
+
+        // console.log(`$$ Loading image: ${entry.assetIndex}`);
+
+        //
+        // Load the image.
+        //
+        const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
+        const timeStart = performance.now();
+        const dataUrl = await loadImageAsDataURL(imageUrl);
+        const timeElapsed = performance.now() - timeStart;
+        loadTime.current.set(entry.assetIndex, timeElapsed);
+        cachedEntry.data = dataUrl;
+
+        // console.log(`$$ Image loaded: ${entry.assetIndex}`);
+
+        if (cachedEntry.imageLoaded) {
+            // console.log(`$$ Image loaded, notifying callback: ${entry.assetIndex}`);
+
+            //
+            // Notify that image is now loaded.
+            //
+            cachedEntry.imageLoaded(dataUrl);
+        }
+
+        // console.log(`$$ Image loaded: ${entry.src}`);
+
+        // console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`);
+    }
+
+    //
     // Loop loading the next image.
     //
     async function loadImages() {
@@ -121,45 +194,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
         // console.log(`** Loading images...`);
 
         try {
-            while (highPriorityImageQueueRef.current.length > 0 || lowPriorityImageQueueRef.current.length > 0) {
-                const entries = highPriorityImageQueueRef.current.length > 0 
-                    ? highPriorityImageQueueRef.current.splice(0, 5)
-                    : lowPriorityImageQueueRef.current.splice(0, 5);
-                
-                await Promise.all(entries.map(async entry => {
-                    const cachedEntry = imageCache.current.get(entry.assetIndex);
-                    if (!cachedEntry) {
-                        //
-                        // This image is no longer cached.
-                        //
-                        return;
-                    }
-
-                    if (cachedEntry.data !== undefined) {
-                        //
-                        // The image is satisfied from the cache.
-                        //
-                        entry.imageLoaded(cachedEntry.data);
-                        return;
-                    }
-
-                    //
-                    // Load the image.
-                    //
-                    const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
-                    const timeStart = performance.now();
-                    const dataUrl = await loadImageAsDataURL(imageUrl);
-                    const timeElapsed = performance.now() - timeStart;
-                    loadTime.current.set(entry.assetIndex, timeElapsed);
-                    cachedEntry.data = dataUrl;
-                    entry.imageLoaded(dataUrl);
-    
-                    // console.log(`$$ Image loaded: ${entry.src}`);
-    
-                    // console.log(`$$ Image loaded, total cached images ${imageCache.current.size}`);
-                }));
-
-                await sleep(1); // Wait a bit to allow the UI to update.
+            while (highPriorityImageQueue.current.size > 0 || lowPriorityImageQueue.current.size > 0) {
+                const queue = highPriorityImageQueue.current.size > 0 
+                    ? highPriorityImageQueue.current
+                    : lowPriorityImageQueue.current;
+                await loadNextImage(queue);
             }
         }
         catch (err) {
@@ -173,54 +212,92 @@ export function ImageQueueContextProvider({ children }: IProps) {
         // console.log(`** Done loading images.`);
         // console.log(loadTime.current.entries());
 
-        function renderBarChart(data: [number, number][]): void {
+        // function renderBarChart(data: [number, number][]): void {
 
-            const batchSize = 30;
-            for (let i = 0; i < data.length; i += batchSize) {
-                const batch = data.slice(i, i + batchSize);
-                const values = batch.map(([_, value]) => value);
-                const maxValue = Math.max(...values);
-                const normalizedData = batch.map(pair => [pair[0], Math.round((pair[1] / maxValue) * 10)]);
-                let output = "";
+        //     const batchSize = 30;
+        //     for (let i = 0; i < data.length; i += batchSize) {
+        //         const batch = data.slice(i, i + batchSize);
+        //         const values = batch.map(([_, value]) => value);
+        //         const maxValue = Math.max(...values);
+        //         const normalizedData = batch.map(pair => [pair[0], Math.round((pair[1] / maxValue) * 10)]);
+        //         let output = "";
                 
-                for (let i = 10; i > 0; i--) {
-                    let row = normalizedData.map(pair => pair[1] >= i ? '██' : '  ');
-                    output += row.join(' ') + '\n';
-                }
+        //         for (let i = 10; i > 0; i--) {
+        //             let row = normalizedData.map(pair => pair[1] >= i ? '██' : '  ');
+        //             output += row.join(' ') + '\n';
+        //         }
 
-                output += normalizedData.map(pair => pair[0])
-                    .map(key => key.toString().padStart(2, ' '))
-                    .join(' ') + "\n";
+        //         output += normalizedData.map(pair => pair[0])
+        //             .map(key => key.toString().padStart(2, ' '))
+        //             .join(' ') + "\n";
 
-                output += normalizedData.map(pair => pair[1])
-                    .map(value => value.toFixed(0).padStart(2, ' '))
-                    .join(' ') + "\n";
+        //         output += normalizedData.map(pair => pair[1])
+        //             .map(value => value.toFixed(0).padStart(2, ' '))
+        //             .join(' ') + "\n";
 
-                console.log(output);
-            }
-        }
+        //         console.log(output);
+        //     }
+        // }
         
         // Render bar chart of load times.
-        const data = Array.from(loadTime.current.entries());
-        renderBarChart(data);
-        
+        // const data = Array.from(loadTime.current.entries());
+        // renderBarChart(data);
+    }
+
+    //
+    // Clear the queue reader for a new set of images to load.
+    //
+    function clearQueue(): void {
+        highPriorityImageQueue.current.clear();
+        lowPriorityImageQueue.current.clear();
+    }
+
+    //
+    // Queues an image to be loaded.
+    //
+    function queueHighPriorityImage(assetId: string, assetIndex: number): void {
+        // console.log(`$$ Queued high priority image: ${assetIndex}`);
+
+        highPriorityImageQueue.current.set(assetIndex, {
+            assetId,
+            assetIndex,
+        });
+    }
+
+    //
+    // Queues an image to be loaded.
+    //
+    function queueLowPriorityImage(assetId: string, assetIndex: number): void {
+        // console.log(`$$ Queued low priority image: ${assetIndex}`);
+
+        lowPriorityImageQueue.current.set(assetIndex, {
+            assetId,
+            assetIndex,
+        });
     }
 
     //
     // Loads an image to a data url.
     //
     function loadImage(assetId: string, assetIndex: number, imageLoaded: ImageLoadedFn): void {
+        // console.log(`$$ Referenced image ${assetIndex}`);
+
         //
         // Reference count the image.
         //
         const cacheEntry = imageCache.current.get(assetIndex);
         if (cacheEntry !== undefined) {
-            // Add new reference..
+            // Add new reference.
             cacheEntry.numRefs += 1;
 
             if (cacheEntry.data) {
+                // Already loaded in the cache.
                 imageLoaded(cacheEntry.data);
                 return;
+            }
+            else {
+                // Still to be loaded.
+                cacheEntry.imageLoaded = imageLoaded;
             }
         }
         else {
@@ -228,30 +305,18 @@ export function ImageQueueContextProvider({ children }: IProps) {
             imageCache.current.set(assetIndex, {
                 numRefs: 1,
                 data: undefined, // Not yet loaded.
+                imageLoaded,
             });
         }
         
         // console.log(`$$ Image queued for loading: ${src}`);
-
-        //
-        // Otherwise add it to the queue to be loaded.
-        //
-        highPriorityImageQueueRef.current.push({ 
-            assetId, 
-            assetIndex,
-            imageLoaded 
-        });
-
-        //
-        // Starts image loading.
-        //
-        loadImages();
     }
 
     //
     // Unloads the image.
     //
     function unloadImage(assetIndex: number): void {
+        // console.log(`$$ Unreferenced image ${assetIndex}`);
 
         //
         // Reference count the image.
@@ -263,6 +328,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
 
         cacheEntry.numRefs -= 1;
+
         if (cacheEntry.numRefs <= 0) {
             imageCache.current.delete(assetIndex);
 
@@ -270,25 +336,14 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
     }
 
-    //
-    // Resets the queue for rerender.
-    //
-    function resetQueue() {
-        // console.log(`$$ Resetting image queue.`);
-
-        //
-        // All high priority images are moved to low priority.
-        // This allows for visible images to be loaded more quickly.
-        //
-        lowPriorityImageQueueRef.current = highPriorityImageQueueRef.current.concat(lowPriorityImageQueueRef.current);
-        highPriorityImageQueueRef.current = [];
-    }
-
     const value: IImageQueueContext = {
         loadImage,
         unloadImage,
-        resetQueue,
         numChangedImages: () => imageCache.current.size,
+        clearQueue,
+        queueHighPriorityImage,
+        queueLowPriorityImage,
+        loadImages,
     };
     
     return (

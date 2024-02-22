@@ -157,25 +157,26 @@ export function GalleryContextProvider({ children }: IProps) {
 
         while (true) {
             const assetsResult = await api.getAssets(continuation);
+            const newAssets = assetsResult.assets;
 
             let assetIndex = loadedAssets.length;
 
             //
             // Keep a copy of newly loaded assets.
             //
-            loadedAssets = loadedAssets.concat(assetsResult.assets);
+            loadedAssets = loadedAssets.concat(newAssets);
             loadedAssetsRef.current = loadedAssets;
 
             //
             // Build the search index as we go.
             //
-            for (const asset of assetsResult.assets) {
+            for (const asset of newAssets) {
                 searchIndex.add(assetIndex, asset);
 
                 assetIndex += 1; // Identify assets by their index in the array.
             }
 
-            console.log(`== Added ${assetsResult.assets.length} assets.`);
+            console.log(`== Added ${newAssets.length} assets.`);
 
             // 
             // Trigger rerender to display the first page of assets.

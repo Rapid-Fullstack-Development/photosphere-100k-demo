@@ -87,7 +87,7 @@ function findVisibleRange(galleryLayout: IGalleryLayout | undefined, scrollTop: 
         return undefined;
     }
     
-    const buffer = 5; // Number of items to render outside the viewport, above and below
+    const buffer = 2; // Number of items to render outside the viewport, above and below
     const startIndex = Math.max(0, galleryLayout.rows.findIndex(row => row.offsetY >= scrollTop) - buffer);
 
     let endIndex = startIndex+1;
@@ -106,29 +106,6 @@ function findVisibleRange(galleryLayout: IGalleryLayout | undefined, scrollTop: 
         endIndex,
     };      
 }    
-
-//
-// Renders rows in the visible range.
-//
-function renderVisibleRange(api: IApiContext, galleryLayout: IGalleryLayout | undefined, scrollTop: number, contentHeight: number | undefined, onItemClick: ItemClickFn | undefined) {
-    if (!contentHeight || !galleryLayout) {
-        return [];
-    }
-
-    const range = findVisibleRange(galleryLayout, scrollTop, contentHeight);
-    if (!range) {
-        return [];
-    }
-
-    const renderedRows: JSX.Element[] = [];
-
-    for (let rowIndex = range.startIndex; rowIndex <= range.endIndex; rowIndex++) {
-        const row = galleryLayout.rows[rowIndex];
-        renderedRows.push(renderRow(api, row, rowIndex, onItemClick));
-    }
-
-    return renderedRows;
-}
 
 export interface IGalleryLayoutProps { 
 
@@ -153,7 +130,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     const { searchText, firstPageLoaded } = useGallery();
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
-    const { resetQueue, numChangedImages } = useImageQueue();
+    const { numChangedImages, clearQueue, queueHighPriorityImage, queueLowPriorityImage, loadImages } = useImageQueue();
     
     //
     // Rebuild layout when necessary. 
@@ -186,9 +163,73 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     }, []);
 
     //
-    // Remove any currently queued images and queue the images needed for the visible range.
+    // Renders rows in the visible range.
     //
-    resetQueue();
+    function renderVisibleRange(api: IApiContext, galleryLayout: IGalleryLayout | undefined, scrollTop: number, contentHeight: number | undefined, onItemClick: ItemClickFn | undefined) {
+        if (!contentHeight || !galleryLayout) {
+            return [];
+        }
+
+        const range = findVisibleRange(galleryLayout, scrollTop, contentHeight);
+        if (!range) {
+            return [];
+        }
+
+        const renderedRows: JSX.Element[] = [];
+
+        //
+        // Clear the queue of all previously requested images.
+        //
+        clearQueue();
+
+        const buffer = 8;
+
+        //
+        // Queue earlier images with lower priority.
+        //
+
+        for (let rowIndex = Math.max(0, range.startIndex-buffer); rowIndex < range.startIndex; rowIndex++) {
+            const row = galleryLayout.rows[rowIndex];
+            for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
+                const item = row.items[itemIndex];
+                queueLowPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+            }
+        }
+
+        //
+        //  rows actually on screen with a higher priority.
+        //
+        for (let rowIndex = range.startIndex; rowIndex <= range.endIndex; rowIndex++) {
+            const row = galleryLayout.rows[rowIndex];
+            for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
+                const item = row.items[itemIndex];
+                queueHighPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+            }
+
+            //
+            // Only render rows actually on screen.
+            //
+            renderedRows.push(renderRow(api, row, rowIndex, onItemClick));
+        }
+
+        //
+        // Render later page with lower priority.
+        //
+        for (let rowIndex = Math.min(galleryLayout.rows.length, range.endIndex+1); rowIndex < Math.min(galleryLayout.rows.length, range.endIndex+buffer); rowIndex++) {
+            const row = galleryLayout.rows[rowIndex];
+            for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
+                const item = row.items[itemIndex];
+                queueLowPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+            }
+        }
+
+        //
+        // Starts the image queue loading.
+        //
+        loadImages(); // Don't await, just let it go on its own.
+
+        return renderedRows;
+    }
 
     return (
         <div
