@@ -42,6 +42,14 @@ export class FileStorage implements IStorage {
     }
 
     //
+    // Returns true if the specified asset exists.
+    //
+    async exists(type: string, assetId: string): Promise<boolean> {
+        return await fs.pathExists(this.getLocalFileName(type, assetId));
+    }
+
+
+    //
     // Gets info about an asset.
     //
     async info(type: string, assetId: string): Promise<IAssetInfo> {

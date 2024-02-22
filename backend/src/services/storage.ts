@@ -43,6 +43,11 @@ export interface IStorage {
     list(type: string, continuationToken?: string): Promise<IListResult>;
 
     //
+    // Returns true if the specified asset exists.
+    //
+    exists(type: string, assetId: string): Promise<boolean>;
+
+    //
     // Gets info about an asset.
     //
     info(type: string, assetId: string): Promise<IAssetInfo>;

@@ -33,12 +33,13 @@ let assetUploads = 0;
 //
 // Determines the number of assets in storage.
 // 
-async function countAssets(storage: IStorage): Promise<number> {
+export async function countAssets(storage: IStorage): Promise<number> {
     let count = 0;
     let continuation = undefined;
 
     while (true) {
-        const result = await storage.list("metadata", continuation);
+        // const result = await storage.list("metadata", continuation);
+        const result = await storage.list("original", continuation);
         count += result.assetsIds.length;
         if (result.continuation) {
             continuation = result.continuation;
@@ -273,4 +274,55 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
     }   
 
     console.log(`Found ${missingDescriptions} assets out of ${totalAssets}. Fixed ${fixedDescriptions} descriptions.`);
+}
+
+//
+// Download high resolution assets.
+//
+export async function downloadHighResAssets(storage: IStorage): Promise<void> {
+
+    for await (const assetId of enumerateAssets(storage)) {
+       
+        if (await storage.exists("display", assetId) && await storage.exists("original", assetId)) {
+            console.log(`Already downloaded ${assetId}`);
+            continue;
+        }
+
+        const data = await storage.read("metadata", assetId);
+        const asset = JSON.parse(data!.toString("utf-8")) as IAsset;
+
+        let full: string;
+        let display: string;
+
+        if (asset.properties?.fullData?.src?.original && asset.properties?.fullData?.src?.large) {
+            full = asset.properties.fullData.src.original;
+            display = asset.properties.fullData.src.large;
+            console.log(`Downloading ${assetId}`);
+
+            await storage.writeStream("original", assetId.toString(), "image/jpg", await streamUrl(full));
+            await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
+
+            console.log("Done");
+        
+            await sleep(100);
+        } 
+        else if (asset.properties?.fullData?.urls?.full && asset.properties?.fullData?.urls?.regular) {
+            full = asset.properties.fullData.urls.full;
+            display = asset.properties.fullData.urls.regular;
+            console.log(`Downloading ${assetId}`);
+
+            await storage.writeStream("original", assetId.toString(), "image/jpg", await streamUrl(full));
+            await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
+
+            console.log("Done");
+        
+            await sleep(100);
+        
+        }
+        else {
+            console.log(`${assetId}`);
+            console.log(JSON.stringify(asset, null, 2)); 
+        }
+    }
+
 }

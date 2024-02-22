@@ -63,6 +63,26 @@ export class CloudStorage implements IStorage {
     }
 
     //
+    // Returns true if the specified asset exists.
+    //
+    async exists(type: string, assetId: string): Promise<boolean> {
+        const headParams: aws.S3.Types.HeadObjectRequest = {
+            Bucket: this.bucket,
+            Key: `${type}/${assetId}`,
+        };
+        try {
+            await this.s3.headObject(headParams).promise();
+            return true;
+        }
+        catch (err: any) {
+            if (err.code === 'NotFound') {
+                return false;
+            }
+            throw err;
+        }
+    }
+
+    //
     // Gets info about an asset.
     //
     async info(type: string, assetId: string): Promise<IAssetInfo> {
