@@ -43,7 +43,8 @@ function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemC
                 return (
                     <Image
                         key={item._id}
-                        src={api.makeUrl(`/thumb?id=${item._id}`)}
+                        assetId={item._id}
+                        assetIndex={row.startingAssetIndex + index}
                         onClick={() => {
                             if (onItemClick) {
                                 onItemClick({ 
@@ -56,7 +57,6 @@ function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemC
                         y={row.offsetY}
                         width={item.thumbWidth!}
                         height={item.thumbHeight!}
-                        index={row.startingAssetIndex + index}
                         />
                 );
             })}

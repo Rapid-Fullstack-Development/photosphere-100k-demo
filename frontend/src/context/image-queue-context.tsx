@@ -4,6 +4,7 @@ import { IGalleryRow } from "../lib/gallery-item";
 import { IGalleryLayout, computePartialLayout } from "../lib/create-layout";
 import { sleep } from "../lib/sleep";
 import { loadImageAsDataURL } from "../lib/image";
+import { useApi } from "./api-context";
 
 export type ImageLoadedFn = (dataUrl: string) => void;
 
@@ -12,12 +13,12 @@ export interface IImageQueueContext {
     //
     // Loads an image to a data url.
     //
-    loadImage(src: string, imageLoaded: ImageLoadedFn): void;
+    loadImage(assetId: string, assetIndex: number, imageLoaded: ImageLoadedFn): void;
 
     //
     // Unloads the image.
     //
-    unloadImage(src: string): void;
+    unloadImage(assetIndex: number): void;
 
     //
     // Resets the queue for rerender.
@@ -45,9 +46,14 @@ export interface IProps {
 //
 interface IImageQueueEntry {
     //
-    // The image to be loaded.
+    // The id of the asset to be loaded.
     //
-    src: string;
+    assetId: string;
+
+    //
+    // The index of the asset to be loaded.
+    //
+    assetIndex: number;
 
     //
     // Callback to invoke when the image has been loaded.
@@ -57,6 +63,11 @@ interface IImageQueueEntry {
 }
 
 export function ImageQueueContextProvider({ children }: IProps) {
+
+    //
+    // Interface to the API.
+    //
+    const api = useApi();
 
     //
     // The queue of high priority images to be loaded.
@@ -84,7 +95,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     // Cache of images that have been loaded.
     //
-    const imageCache = useRef<Map<string, IImageCacheEntry>>(new Map<string, IImageCacheEntry>);
+    const imageCache = useRef<Map<number, IImageCacheEntry>>(new Map<number, IImageCacheEntry>);
 
     //
     // Set to true when loading images.
@@ -111,7 +122,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
                     : lowPriorityImageQueueRef.current.splice(0, 5);
                 
                 await Promise.all(entries.map(async entry => {
-                    const cachedEntry = imageCache.current.get(entry.src);
+                    const cachedEntry = imageCache.current.get(entry.assetIndex);
                     if (!cachedEntry) {
                         //
                         // This image is no longer cached.
@@ -130,8 +141,9 @@ export function ImageQueueContextProvider({ children }: IProps) {
                     //
                     // Load the image.
                     //
-                    const dataUrl = await loadImageAsDataURL(entry.src);
-                    cachedEntry.data = dataUrl;;
+                    const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
+                    const dataUrl = await loadImageAsDataURL(imageUrl);
+                    cachedEntry.data = dataUrl;
                     entry.imageLoaded(dataUrl);
     
                     // console.log(`$$ Image loaded: ${entry.src}`);
@@ -156,11 +168,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     // Loads an image to a data url.
     //
-    function loadImage(src: string, imageLoaded: ImageLoadedFn): void {
+    function loadImage(assetId: string, assetIndex: number, imageLoaded: ImageLoadedFn): void {
         //
         // Reference count the image.
         //
-        const cacheEntry = imageCache.current.get(src);
+        const cacheEntry = imageCache.current.get(assetIndex);
         if (cacheEntry !== undefined) {
             // Add new reference..
             cacheEntry.numRefs += 1;
@@ -172,7 +184,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
         else {
             // First reference.
-            imageCache.current.set(src, {
+            imageCache.current.set(assetIndex, {
                 numRefs: 1,
                 data: undefined, // Not yet loaded.
             });
@@ -183,7 +195,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
         //
         // Otherwise add it to the queue to be loaded.
         //
-        highPriorityImageQueueRef.current.push({ src, imageLoaded });
+        highPriorityImageQueueRef.current.push({ 
+            assetId, 
+            assetIndex,
+            imageLoaded 
+        });
 
         //
         // Starts image loading.
@@ -194,12 +210,12 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     // Unloads the image.
     //
-    function unloadImage(src: string): void {
+    function unloadImage(assetIndex: number): void {
 
         //
         // Reference count the image.
         //
-        let cacheEntry = imageCache.current.get(src);
+        let cacheEntry = imageCache.current.get(assetIndex);
         if (cacheEntry === undefined) {
             // Image wasn't loaded.
             return;
@@ -207,7 +223,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
 
         cacheEntry.numRefs -= 1;
         if (cacheEntry.numRefs <= 0) {
-            imageCache.current.delete(src);
+            imageCache.current.delete(assetIndex);
 
             // console.log(`$$ Image removed, total cached images ${imageCache.current.size}`);
         }

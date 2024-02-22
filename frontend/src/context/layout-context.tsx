@@ -122,7 +122,7 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
             buildingLayoutRef.current = false;
         }
 
-        console.log(`>> Finished rebuild layout for items ${layoutRef.current!.rows.reduce((acc, row) => acc + row.items.length, 0)}`);
+        console.log(`>> Finished rebuild layout for items ${layoutRef.current?.rows.reduce((acc, row) => acc + row.items.length, 0)}`);
     }
 
     const value: ILayoutContext = {

@@ -4,9 +4,14 @@ import { useImageQueue } from "../context/image-queue-context";
 
 export interface IImageProps {
     //
-    // Source URL for the image.
+    // The id of the asset.
     //
-    src: string;
+    assetId: string;
+
+    //
+    // Index of the image.
+    //
+    assetIndex: number;
 
     //
     // Event raised when an item in the gallery has been clicked.
@@ -32,32 +37,27 @@ export interface IImageProps {
     // Height of the image.
     //
     height: number;
-
-    //
-    // Index of the image.
-    //
-    index: number;
 }
 
 //
 // Renders an image.
 // Preloads images for less flickering on scroll.
 //
-export function Image({ src, onClick, x, y, width, height, index }: IImageProps) {
+export function Image({ assetId, assetIndex, onClick, x, y, width, height }: IImageProps) {
 
     const [imageDataUrl, setImageDataUrl] = useState<string>("");
 
     const { loadImage, unloadImage } = useImageQueue();
 
     useEffect(() => {
-        loadImage(src, imageDataUrl => {
+        loadImage(assetId, assetIndex, imageDataUrl => {
             setImageDataUrl(imageDataUrl);
         });
 
         return () => {
-            unloadImage(src);
+            unloadImage(assetIndex);
         };
-    }, [src]);
+    }, [assetId, assetIndex]);
 
     return (
         <>
@@ -117,7 +117,7 @@ export function Image({ src, onClick, x, y, width, height, index }: IImageProps)
                     lineHeight: "14px",
                 }}
                 >
-                #{index+1}
+                #{assetIndex+1}
             </div>
 
             {/* Renders a debug panel for each image showing it's position and dimensions. */}
