@@ -98,6 +98,11 @@ export function ImageQueueContextProvider({ children }: IProps) {
     const imageCache = useRef<Map<number, IImageCacheEntry>>(new Map<number, IImageCacheEntry>);
 
     //
+    // Records the load time of each image.
+    //
+    const loadTime = useRef<Map<number, number>>(new Map<number, number>());
+
+    //
     // Set to true when loading images.
     //
     const isLoadingRef = useRef<boolean>(false);
@@ -142,7 +147,10 @@ export function ImageQueueContextProvider({ children }: IProps) {
                     // Load the image.
                     //
                     const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
+                    const timeStart = performance.now();
                     const dataUrl = await loadImageAsDataURL(imageUrl);
+                    const timeElapsed = performance.now() - timeStart;
+                    loadTime.current.set(entry.assetIndex, timeElapsed);
                     cachedEntry.data = dataUrl;
                     entry.imageLoaded(dataUrl);
     
@@ -163,6 +171,39 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
 
         // console.log(`** Done loading images.`);
+        // console.log(loadTime.current.entries());
+
+        function renderBarChart(data: [number, number][]): void {
+
+            const batchSize = 30;
+            for (let i = 0; i < data.length; i += batchSize) {
+                const batch = data.slice(i, i + batchSize);
+                const values = batch.map(([_, value]) => value);
+                const maxValue = Math.max(...values);
+                const normalizedData = batch.map(pair => [pair[0], Math.round((pair[1] / maxValue) * 10)]);
+                let output = "";
+                
+                for (let i = 10; i > 0; i--) {
+                    let row = normalizedData.map(pair => pair[1] >= i ? '██' : '  ');
+                    output += row.join(' ') + '\n';
+                }
+
+                output += normalizedData.map(pair => pair[0])
+                    .map(key => key.toString().padStart(2, ' '))
+                    .join(' ') + "\n";
+
+                output += normalizedData.map(pair => pair[1])
+                    .map(value => value.toFixed(0).padStart(2, ' '))
+                    .join(' ') + "\n";
+
+                console.log(output);
+            }
+        }
+        
+        // Render bar chart of load times.
+        const data = Array.from(loadTime.current.entries());
+        renderBarChart(data);
+        
     }
 
     //
