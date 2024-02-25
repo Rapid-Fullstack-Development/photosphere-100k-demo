@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { BrowserRouter, Route, Routes, NavLink, Navigate, useNavigate } from "react-router-dom";
 import { AssetView } from "./components/asset-view";
 import { Spinner } from "./components/spinner";
-import { ISelectedGalleryItem } from "./lib/gallery-item";
 import { GalleryPage } from "./pages/gallery";
 import { UploadPage } from "./pages/upload";
 import { useGallery } from "./context/gallery-context";
@@ -10,6 +9,7 @@ import { GalleryItemContextProvider } from "./context/gallery-item-context";
 import { useUpload } from "./context/upload-context";
 import { AboutPage } from "./pages/about";
 const FPSStats = require("react-fps-stats").default;
+import classnames from "classnames";
 
 //
 // The main page of the Photosphere app.
@@ -92,19 +92,23 @@ export function Main() {
 
     return (
         <>
-            <div id="navbar" className={(openSearch ? "search": "")} >
+            <div id="navbar" className={classnames({ "search": openSearch, "sidebar": sidebarOpen })} >
                 <div className="flex flex-col">
                     <div className="flex flex-row items-center pl-4 pt-3 pb-2">
-                        <button
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                            >
-                            <i className="fa-solid fa-bars"></i>
-                        </button>
+                        {!sidebarOpen
+                            && <>
+                                <button
+                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    >
+                                    <i className="fa-solid fa-bars"></i>
+                                </button>
 
-                        <h1 className="ml-4">Photosphere</h1>
+                                <h1 className="ml-4 mr-8">Photosphere</h1>
+                            </>
+                        }
 
                         <button
-                            className="ml-8 mr-3"
+                            className="mr-3"
                         	onClick={event => {
                             	setOpenSearch(true);
                             }}
@@ -249,8 +253,8 @@ export function Main() {
                 </button> */}
             </div>
 
-            <div id="main" className={(openSearch ? "search": "")} >
-                <div id="content" className={sidebarOpen ? "open" : ""} >
+            <div id="main" className={classnames({ "search": openSearch, "sidebar": sidebarOpen })} >
+                <div id="content">
                     <Routes>
                         <Route 
                             path="/cloud" 

@@ -54,6 +54,7 @@
     "@react-hook/resize-observer": "^1.2.6",
     "axios": "^0.27.2",
     "blob-util": "^2.0.2",
+    "classnames": "^2.5.1",
     "dayjs": "^1.11.7",
     "flexsearch": "^0.7.43",
     "jszip": "^3.10.1",

@@ -86,7 +86,11 @@ i {
 }
 
 @media (min-width: 640px) {
-    #content.open {
+    #navbar.sidebar {
+        padding-left: 201px;
+    }
+
+    #main.sidebar {
         padding-left: 201px;
     }
 }
