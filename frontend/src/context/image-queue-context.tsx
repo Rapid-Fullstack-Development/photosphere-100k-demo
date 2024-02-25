@@ -196,6 +196,16 @@ export function ImageQueueContextProvider({ children }: IProps) {
                     : lowPriorityImageQueue.current;
                 await loadNextImage(queue);
             }
+
+            //
+            // Cleanup unreferenced images.
+            //
+            for (const [assetGlobalIndex, cacheEntry] of imageCache.current.entries()) {
+                if (cacheEntry.numRefs <= 0) {
+                    imageCache.current.delete(assetGlobalIndex);
+                    unloadObjectURL(cacheEntry.objectURL!);
+                }
+            }
         }
         catch (err) {
             console.error("Failed loading images.");
@@ -324,14 +334,6 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
 
         cacheEntry.numRefs -= 1;
-
-        if (cacheEntry.numRefs <= 0) {
-            imageCache.current.delete(assetGlobalIndex);
-
-            unloadObjectURL(objectURL);
-
-            // console.log(`$$ Image removed, total cached images ${imageCache.current.size}`);
-        }
     }
 
     const value: IImageQueueContext = {
