@@ -1,8 +1,8 @@
-import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { ReactNode, createContext, useContext, useRef, useState } from "react";
 import { useGallery } from "./gallery-context";
-import { IGalleryRow } from "../lib/gallery-item";
 import { IGalleryLayout, computePartialLayout } from "../lib/create-layout";
 import { sleep } from "../lib/sleep";
+import { debug } from "console";
 
 export interface ILayoutContext {
 
@@ -54,7 +54,7 @@ export interface IProps {
 
 export function LayoutContextProvider({ children, galleryWidth, targetRowHeight }: IProps) {
 
-    const { assets, searchedAssets, searchText, enumerateAssets } = useGallery();
+    const { enumerateAssets } = useGallery();
 
     //
     // Reference to the current gallery layout.
@@ -70,7 +70,7 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
     // Set to true when the first page of assets has loaded.
     // Triggers a rerender to show the first page of the gallery.
     //
-    const [firstPageLoaded, setFirstPageLoaded] = useState(false);
+    const [firstPageLoaded, setFirstPageLoaded] = useState(0);
 
     //
     // Builds the gallery layout.
@@ -109,12 +109,12 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
                 //
                 if (!firstPageLoaded) {
                     firstPageLoaded = true;
-                    setFirstPageLoaded(true);
+                    setFirstPageLoaded(prev => prev + 1);
 
                     //
                     // Sleep for a moment to allow the rerender before finshing the layout.
                     //
-                    await sleep(100);
+                    await sleep(10);
                 }
             }
         }
