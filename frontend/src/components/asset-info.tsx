@@ -121,7 +121,7 @@ export function AssetInfo({ open, onClose }: IAssetInfoProps) {
                             </div>
                         </div>
 
-                        <div className="text-base text-gray-600 flex flex-row mt-4 pt-2">
+                        {/* <div className="text-base text-gray-600 flex flex-row mt-4 pt-2">
                             <div className="w-6 mt-2 flex flex-col items-center">
                                 <i className="text-2xl fa-solid fa-calendar-day"></i>
                             </div>
@@ -135,9 +135,9 @@ export function AssetInfo({ open, onClose }: IAssetInfoProps) {
                                     <div>{asset.hash}</div>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
 
-                        <div className="text-lg text-gray-600 flex flex-row portrait:mt-10 landscape:mt-4 pt-2">
+                        <div className="text-lg text-gray-600 flex flex-row portrait:mt-4 landscape:mt-4 pt-2">
                             <div className="w-6 mt-2 flex flex-col items-center">
                                 <i className="text-2xl fa-solid fa-tags"></i>
                             </div>
