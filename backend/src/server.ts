@@ -422,6 +422,19 @@ export async function createServer(now: () => Date, storage: IStorage) {
             async (assetId) => {
                 const data = await storage.read("metadata", assetId);
                 const asset = JSON.parse(data!.toString("utf-8"));
+                let photographer;
+                if (asset.properties.fullData?.user) {
+                    photographer = {
+                        name: asset.properties.fullData.user.name,
+                        url: asset.properties.fullData.user.links.html,
+                    };
+                }
+                else if (asset.properties.fullData?.photographer) {
+                    photographer = {
+                        name: asset.properties.fullData.photographer,
+                        url: asset.properties.fullData.photographer_url,
+                    };
+                }
                 return {
                     _id: asset._id,
                     width: asset.width,
@@ -429,6 +442,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
                     description: asset.description,
                     labels: asset.labels,
                     sortDate: asset.sortDate,
+                    photographer,
                 };
             }
         ));

@@ -56,6 +56,33 @@ export function AssetView({ open, onClose, onNext, onPrev }: IAssetViewProps) {
                             data-testid="fullsize-asset"
                             src={api.makeUrl(`/display?id=${asset._id}`)}
                             />
+                        {asset.photographer
+                            && <div 
+                                style={{
+                                    position: "absolute",
+                                    bottom: 20,
+                                    zIndex: 10000,
+                                }}
+                                className="text-center pt-2"
+                                >
+                                <a
+                                    href={asset.photographer.url}
+                                    target="_blank"
+                                    style={{
+                                        color: "rgba(255,255,255, 0.6)",
+                                    }}
+                                    >
+                                    Photo by  <span
+                                        style={{
+                                            color: "rgba(255,255,255,1)",
+                                        }}
+                                        >
+                                        {asset.photographer.name}
+                                    </span>
+                                </a>
+                            </div>
+                        }
+
                     </div>
                 }
 

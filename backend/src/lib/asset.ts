@@ -3,6 +3,21 @@
 //
 
 //
+// Represents a photographer.
+//
+export interface IPhotographer {
+    //
+    // The name of the photographer.
+    //
+    name: string;
+
+    //
+    // The URL of the photographer's website.
+    //
+    url: string;
+}
+
+//
 // Minimal asset data to return to the client.
 //
 export interface IMinimalAsset {
@@ -35,6 +50,11 @@ export interface IMinimalAsset {
     // The data by which to sort the asset.
     //
     sortDate: string;
+
+    //
+    // The photographer of the asset, if known.
+    //
+    photographer?: IPhotographer;
 }
 
 //
