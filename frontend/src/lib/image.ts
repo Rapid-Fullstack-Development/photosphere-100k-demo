@@ -2,7 +2,7 @@ import axios from 'axios';
 import EXIF from './exif-js/exif';
 
 //
-// Loads an image to a data  URL.
+// Loads an image to a data URL.
 //
 export async function loadImageAsDataURL(imageUrl: string): Promise<string>  {
     const response = await axios.get(imageUrl, {
@@ -12,6 +12,24 @@ export async function loadImageAsDataURL(imageUrl: string): Promise<string>  {
     const buffer = Buffer.from(response.data, 'binary').toString('base64'); // Convert binary data to base64 string
     const dataUrl = `data:${response.headers['content-type'].toLowerCase()};base64,${buffer}`; // Construct data URL
     return dataUrl;
+}
+
+//
+// Loads an image to an object URL.
+//
+export async function loadImageAsObjectURL(imageUrl: string): Promise<string>  {
+    const response = await axios.get(imageUrl, {
+        responseType: 'blob'
+    });
+
+    return URL.createObjectURL(response.data);
+}
+
+//
+// Frees up memory used by an object URL.
+//
+export function unloadObjectURL(objectURL: string) {
+    URL.revokeObjectURL(objectURL);
 }
 
 //

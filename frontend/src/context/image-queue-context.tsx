@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
-import { loadImageAsDataURL } from "../lib/image";
+import { loadImageAsDataURL, loadImageAsObjectURL, unloadObjectURL } from "../lib/image";
 import { useApi } from "./api-context";
 
 export type ImageLoadedFn = (dataUrl: string) => void;
@@ -29,7 +29,7 @@ export interface IImageQueueContext {
     //
     // Unloads the image.
     //
-    unloadImage(assetGlobalIndex: number): void;
+    unloadImage(assetGlobalIndex: number, objectURL: string): void;
 
     //
     // The number of images in the cache.
@@ -91,10 +91,10 @@ export function ImageQueueContextProvider({ children }: IProps) {
         numRefs: number;
 
         //
-        // The data url of the image.
+        // The object url of the image.
         // Set to undefined while waiting for the load.
         //
-        data: string | undefined;
+        objectURL: string | undefined;
 
         //
         // Callback to invoke when the image has been loaded.
@@ -134,13 +134,13 @@ export function ImageQueueContextProvider({ children }: IProps) {
             //
             cachedEntry = {
                 numRefs: 0, // No references yet.
-                data: undefined, // Not yet loaded.
+                objectURL: undefined, // Not yet loaded.
                 imageLoaded: undefined, // No callbacks yet.
             };
             imageCache.current.set(entry.assetGlobalIndex, cachedEntry);
         }
         else {
-            if (cachedEntry.data !== undefined) {
+            if (cachedEntry.objectURL !== undefined) {
                 // 
                 // Already loaded.
                 //
@@ -155,10 +155,10 @@ export function ImageQueueContextProvider({ children }: IProps) {
         //
         const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
         const timeStart = performance.now();
-        const dataUrl = await loadImageAsDataURL(imageUrl);
+        const objectURL = await loadImageAsObjectURL(imageUrl);
         const timeElapsed = performance.now() - timeStart;
         loadTime.current.set(entry.assetGlobalIndex, timeElapsed);
-        cachedEntry.data = dataUrl;
+        cachedEntry.objectURL = objectURL;
 
         // console.log(`$$ Image loaded: ${entry.assetGlobalIndex}`);
 
@@ -168,7 +168,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
             //
             // Notify that image is now loaded.
             //
-            cachedEntry.imageLoaded(dataUrl);
+            cachedEntry.imageLoaded(objectURL);
         }
 
         // console.log(`$$ Image loaded: ${entry.src}`);
@@ -286,9 +286,9 @@ export function ImageQueueContextProvider({ children }: IProps) {
             // Add new reference.
             cacheEntry.numRefs += 1;
 
-            if (cacheEntry.data) {
+            if (cacheEntry.objectURL) {
                 // Already loaded in the cache.
-                imageLoaded(cacheEntry.data);
+                imageLoaded(cacheEntry.objectURL);
                 return;
             }
             else {
@@ -300,7 +300,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
             // First reference.
             imageCache.current.set(assetGlobalIndex, {
                 numRefs: 1,
-                data: undefined, // Not yet loaded.
+                objectURL: undefined, // Not yet loaded.
                 imageLoaded,
             });
         }
@@ -311,7 +311,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
     //
     // Unloads the image.
     //
-    function unloadImage(assetGlobalIndex: number): void {
+    function unloadImage(assetGlobalIndex: number, objectURL: string): void {
         // console.log(`$$ Unreferenced image ${assetGlobalIndex}`);
 
         //
@@ -327,6 +327,8 @@ export function ImageQueueContextProvider({ children }: IProps) {
 
         if (cacheEntry.numRefs <= 0) {
             imageCache.current.delete(assetGlobalIndex);
+
+            unloadObjectURL(objectURL);
 
             // console.log(`$$ Image removed, total cached images ${imageCache.current.size}`);
         }

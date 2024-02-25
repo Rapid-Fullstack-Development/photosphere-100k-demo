@@ -45,17 +45,17 @@ export interface IImageProps {
 //
 export function Image({ assetId, assetGlobalIndex, onClick, x, y, width, height }: IImageProps) {
 
-    const [imageDataUrl, setImageDataUrl] = useState<string>("");
+    const [objectURL, setObjectURL] = useState<string>("");
 
     const { loadImage, unloadImage } = useImageQueue();
 
     useEffect(() => {
-        loadImage(assetId, assetGlobalIndex, imageDataUrl => {
-            setImageDataUrl(imageDataUrl);
+        loadImage(assetId, assetGlobalIndex, objectURL => {
+            setObjectURL(objectURL);
         });
 
         return () => {
-            unloadImage(assetGlobalIndex);
+            unloadImage(assetGlobalIndex, objectURL);
         };
     }, [assetId, assetGlobalIndex]);
 
@@ -81,11 +81,11 @@ export function Image({ assetId, assetGlobalIndex, onClick, x, y, width, height 
                 </div>
             </div>
             
-            {imageDataUrl
+            {objectURL
                 && <img 
                     data-testid="gallery-thumb"
                     className="gallery-thumb"
-                    src={imageDataUrl}
+                    src={objectURL}
                     style={{
                         position: "absolute",
                         left: `${x}px`,
