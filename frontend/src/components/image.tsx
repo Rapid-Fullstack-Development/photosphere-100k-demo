@@ -11,7 +11,7 @@ export interface IImageProps {
     //
     // Index of the image.
     //
-    assetIndex: number;
+    assetGlobalIndex: number;
 
     //
     // Event raised when an item in the gallery has been clicked.
@@ -43,21 +43,21 @@ export interface IImageProps {
 // Renders an image.
 // Preloads images for less flickering on scroll.
 //
-export function Image({ assetId, assetIndex, onClick, x, y, width, height }: IImageProps) {
+export function Image({ assetId, assetGlobalIndex, onClick, x, y, width, height }: IImageProps) {
 
     const [imageDataUrl, setImageDataUrl] = useState<string>("");
 
     const { loadImage, unloadImage } = useImageQueue();
 
     useEffect(() => {
-        loadImage(assetId, assetIndex, imageDataUrl => {
+        loadImage(assetId, assetGlobalIndex, imageDataUrl => {
             setImageDataUrl(imageDataUrl);
         });
 
         return () => {
-            unloadImage(assetIndex);
+            unloadImage(assetGlobalIndex);
         };
-    }, [assetId, assetIndex]);
+    }, [assetId, assetGlobalIndex]);
 
     return (
         <>
@@ -117,7 +117,7 @@ export function Image({ assetId, assetIndex, onClick, x, y, width, height }: IIm
                     lineHeight: "14px",
                 }}
                 >
-                #{assetIndex+1}
+                #{assetGlobalIndex+1}
             </div>
 
             {/* Renders a debug panel for each image showing it's position and dimensions. */}

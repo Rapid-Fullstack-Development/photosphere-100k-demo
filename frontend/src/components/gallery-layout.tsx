@@ -44,12 +44,12 @@ function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemC
                     <Image
                         key={item._id}
                         assetId={item._id}
-                        assetIndex={row.startingAssetIndex + index}
+                        assetGlobalIndex={item.globalIndex}
                         onClick={() => {
                             if (onItemClick) {
                                 onItemClick({ 
                                     item, 
-                                    index: row.startingAssetIndex + index 
+                                    assetDisplayIndex: row.startingAssetDisplayIndex + index 
                                 });
                             }
                         }}
@@ -192,7 +192,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             const row = galleryLayout.rows[rowIndex];
             for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
                 const item = row.items[itemIndex];
-                queueLowPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+                queueLowPriorityImage(item._id, item.globalIndex);
             }
         }
 
@@ -203,7 +203,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             const row = galleryLayout.rows[rowIndex];
             for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
                 const item = row.items[itemIndex];
-                queueHighPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+                queueHighPriorityImage(item._id, item.globalIndex);
             }
 
             //
@@ -219,7 +219,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             const row = galleryLayout.rows[rowIndex];
             for (let itemIndex = 0; itemIndex < row.items.length; itemIndex++) {
                 const item = row.items[itemIndex];
-                queueLowPriorityImage(item._id, row.startingAssetIndex + itemIndex);
+                queueLowPriorityImage(item._id, item.globalIndex);
             }
         }
 

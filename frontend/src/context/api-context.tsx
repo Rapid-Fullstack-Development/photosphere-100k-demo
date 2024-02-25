@@ -1,10 +1,7 @@
 import React, { createContext, ReactNode, useContext } from "react";
 import { LocalStorage } from "../lib/local-storage";
-import { IUploadDetails } from "../lib/upload-details";
 import { IGalleryItem } from "../lib/gallery-item";
 import axios from "axios";
-import { base64StringToBlob } from 'blob-util';
-import dayjs from "dayjs";
 
 const BASE_URL = process.env.BASE_URL as string;
 if (!BASE_URL) {
@@ -156,12 +153,6 @@ export function ApiContextProvider({ children }: IProps) {
                 // },
             }
         );
-        const { assets } = data;
-        
-        for (const asset of assets) {
-            //TODO: This should be configurable.
-            asset.group = dayjs(asset.sortDate).format("MMM, YYYY")
-        }
 
         return data;
     }

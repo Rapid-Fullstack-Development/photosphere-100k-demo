@@ -10,6 +10,11 @@ export interface IGalleryItem {
     _id: string;
 
     //
+    // The global index of the asset.
+    //
+    globalIndex: number;
+
+    //
     // The horizontal location where the image starts in the gallery.
     //
     offsetX?: number;
@@ -108,7 +113,7 @@ export interface IGalleryRow {
     //
     // The index in the gallery of the first asset in this row.
     //
-    startingAssetIndex: number;
+    startingAssetDisplayIndex: number;
 
     //
     // Items to display in this row in the gallery.
@@ -149,5 +154,5 @@ export interface ISelectedGalleryItem {
     //
     // The index of the selected item in the gallery.
     //
-    index: number;
+    assetDisplayIndex: number;
 }

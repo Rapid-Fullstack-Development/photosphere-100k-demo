@@ -3,6 +3,7 @@ import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
 import flexsearch from "flexsearch";
 import { sleep } from "../lib/sleep";
+import dayjs from "dayjs";
 
 export interface IGalleryContext {
 
@@ -159,7 +160,7 @@ export function GalleryContextProvider({ children }: IProps) {
             const assetsResult = await api.getAssets(continuation);
             const newAssets = assetsResult.assets;
 
-            let assetIndex = loadedAssets.length;
+            let assetGlobalIndex = loadedAssets.length;
 
             //
             // Keep a copy of newly loaded assets.
@@ -171,9 +172,19 @@ export function GalleryContextProvider({ children }: IProps) {
             // Build the search index as we go.
             //
             for (const asset of newAssets) {
-                searchIndex.add(assetIndex, asset);
+                searchIndex.add(assetGlobalIndex, asset);
 
-                assetIndex += 1; // Identify assets by their index in the array.
+                //
+                // Parse date and make group.
+                //
+                asset.group = dayjs(asset.sortDate).format("MMM, YYYY");
+
+                //
+                // Record the global index.
+                //
+                asset.globalIndex = assetGlobalIndex;
+
+                assetGlobalIndex += 1; // Identify assets by their index in the array.
             }
 
             console.log(`== Added ${newAssets.length} assets.`);
@@ -359,17 +370,17 @@ export function GalleryContextProvider({ children }: IProps) {
     //
     function getPrev(selectedItem: ISelectedGalleryItem): ISelectedGalleryItem | undefined {
 
-        if (selectedItem.index < 0) {
+        if (selectedItem.assetDisplayIndex < 0) {
             return undefined;
         }
 
         const items = searchedAssetsRef.current || loadedAssetsRef.current;
 
-        if (selectedItem.index > 0) {
-            const prevIndex = selectedItem.index-1;
+        if (selectedItem.assetDisplayIndex > 0) {
+            const prevIndex = selectedItem.assetDisplayIndex-1;
             return {
                 item: items[prevIndex],
-                index: prevIndex,
+                assetDisplayIndex: prevIndex,
             };
         }
         else {
@@ -382,17 +393,17 @@ export function GalleryContextProvider({ children }: IProps) {
     //
     function getNext(selectedItem: ISelectedGalleryItem): ISelectedGalleryItem | undefined {
 
-        if (selectedItem.index < 0) {
+        if (selectedItem.assetDisplayIndex < 0) {
             return undefined;
         }
 
         const items = searchedAssetsRef.current || loadedAssetsRef.current;
 
-        if (selectedItem.index < items.length-1) {
-            const nextIndex = selectedItem.index + 1;
+        if (selectedItem.assetDisplayIndex < items.length-1) {
+            const nextIndex = selectedItem.assetDisplayIndex + 1;
             return {
                 item: items[nextIndex],
-                index: nextIndex,
+                assetDisplayIndex: nextIndex,
             };
         }
         else {

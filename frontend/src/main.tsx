@@ -291,7 +291,7 @@ export function Main() {
             {selectedItem &&
                 <GalleryItemContextProvider 
                     asset={selectedItem.item}
-                    assetIndex={selectedItem.index}
+                    assetGlobalIndex={selectedItem.item.globalIndex}
                     key={selectedItem.item._id}
                     >
 		            <AssetView

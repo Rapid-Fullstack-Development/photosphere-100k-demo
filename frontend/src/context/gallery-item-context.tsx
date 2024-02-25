@@ -40,13 +40,13 @@ export interface IProps {
     asset: IGalleryItem;
 
     //
-    // Index of the asset in the gallery.
+    // Global index of the asset in the gallery.
     // This is required for fast updates for the asset back into the full gallery.
     //
-    assetIndex: number;
+    assetGlobalIndex: number;
 }
 
-export function GalleryItemContextProvider({ children, asset, assetIndex }: IProps) {
+export function GalleryItemContextProvider({ children, asset, assetGlobalIndex }: IProps) {
 
     //
     // Interface to the backend.
@@ -105,7 +105,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
         // Updating the description triggers a timeout (see useEffect above)
         // to update the description on the backend.
         //
-        updateAsset(assetIndex, {
+        updateAsset(assetGlobalIndex, {
             description,
         });
     }
@@ -117,7 +117,7 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
 
         // await api.addLabel(_asset._id, label);
 
-        updateAsset(assetIndex, {
+        updateAsset(assetGlobalIndex, {
             labels: [
                 ...(_asset.labels || []),
                 label,
@@ -132,14 +132,13 @@ export function GalleryItemContextProvider({ children, asset, assetIndex }: IPro
 
         // await api.removeLabel(_asset._id, label);
 
-        updateAsset(assetIndex, {
+        updateAsset(assetGlobalIndex, {
             labels: (_asset.labels || []).filter(x => x !== label),
         });
     }
 
     const value: IGalleryItemContext = {
         asset: _asset,
-        setAsset,
         setDescription,
         addLabel,
         removeLabel,
