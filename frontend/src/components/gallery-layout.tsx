@@ -137,7 +137,15 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     //
     useEffect(() => {
 
-        buildLayout();
+        const timeout = setTimeout(() => {
+            console.log("Rebuilding layout");
+            buildLayout(); // Debounced.
+        }, 100);
+
+        return () => {
+            clearTimeout(timeout);
+        };
+
 
     }, [firstPageLoaded, searchText, galleryWidth, targetRowHeight]);
 
