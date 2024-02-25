@@ -23,12 +23,16 @@ export function AboutPage() {
                     I do hope that other people will use this software to manage their own digital assets. If you think you might like to use Photosphere in the future, please send me an email on <a href="mailto:ashley@codecapers.com.au">ashley@codecapers.com.au</a>.
                 </p>
                 <p className="pt-4">
-                    The big concept of Photosphere is that you bring your own storage. You bring cloud storage from one of the major cloud vendors,
+                    The big concept of Photosphere is that you bring your own storage from one of the major cloud vendors,
                     like AWS S3, and that's basically all you need. This software uses no traditional database, it reads metadata and assets directly from cloud storage.
                     Well like I said, it's a big experiment, but it's working out quite well so far.
                 </p>
                 <p className="pt-4">
                     The development of Photosphere is examined in the book <a target="_blank" href="https://rapidfullstackdevelopment.com">Rapid Fullstack Development</a>. 
+                </p>
+
+                <p className="pt-4">
+                    Thanks to Pexel and Unsplash for the images used in this demo of Photosphere.
                 </p>
             </div>
         </div>

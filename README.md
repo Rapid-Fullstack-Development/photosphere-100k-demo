@@ -1,12 +1,12 @@
-# Photosphere monorepo
+# Photosphere 100k demo
 
 An experimental fork of Photosphere that removes the database and stores metadata in S3.
 
+See 100,000 photos in the live demo: [https://photosphere-100k.codecapers.com.au](https://photosphere-100k.codecapers.com.au/)
+
 This monorepo contains the backend and frontend for [the Photosphere application](https://rapidfullstackdevelopment.com/example-application).
 
-This code accompanies chapter 6 of the book [Rapid Fullstack Development](https://rapidfullstackdevelopment.com/).
-
-Follow the author on [Twitter](https://twitter.com/codecapers) for updates.
+The development of this project is covered in the book [Rapid Fullstack Development](https://rapidfullstackdevelopment.com/).
 
 ## Running Photosphere
 
