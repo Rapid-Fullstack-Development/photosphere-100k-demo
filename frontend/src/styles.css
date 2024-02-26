@@ -197,13 +197,34 @@ i {
     bottom: 0;
 }
 
-.photo-container img {
+.photo-container .thumbnail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 80%;
     height: 80%;
     margin: auto;
-    max-width: 100vw;
-    max-height: 100vh;
     object-fit: contain;
+}
+
+.photo-container .full {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 80%;
+    height: 80%;
+    margin: auto;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.photo-container .full.loaded {
+    opacity: 1;
 }
 
 .photo-nav {

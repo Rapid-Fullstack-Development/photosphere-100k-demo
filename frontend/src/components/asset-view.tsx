@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useApi } from "../context/api-context";
 import { AssetInfo } from "./asset-info";
 import { useGalleryItem } from "../context/gallery-item-context";
+import { useImageQueue } from "../context/image-queue-context";
+import classNames from "classnames";
 
 export interface IAssetViewProps { 
 
@@ -41,30 +43,64 @@ export function AssetView({ open, onClose, onNext, onPrev }: IAssetViewProps) {
     //
     const api = useApi();
 
+    //
+    // Interface to the image queue.
+    //
+    const { loadImage, unloadImage, queueHighPriorityImage, loadImages } = useImageQueue();
+
     // 
     // Set to true to open the info modal.
     //
     const [openInfo, setOpenInfo] = useState<boolean>(false);
 
+    //
+    // The object URL for the thumbnail, loaded from cache.
+    //
+    const [thumnailObjectURL, setThumbnailObjectURL] = useState<string | undefined>(undefined);
+
+    //
+    // Set to true when the full asset has been loaded.
+    //
+    const [fullAssetLoaded, setFullAssetLoaded] = useState<boolean>(false);
+
+    useEffect(() => {
+        loadImage(asset._id, asset.globalIndex, objectURL => {
+            setThumbnailObjectURL(objectURL);
+        });
+
+        return () => {
+            if (thumnailObjectURL) {
+                unloadImage(asset.globalIndex, thumnailObjectURL);
+            }
+        };
+    }, [asset]);
+
+    queueHighPriorityImage(asset._id, asset.globalIndex);
+    loadImages();
+
     return (
         <div className={"photo bg-black text-white text-xl " + (open ? "open" : "")}>
 
             <div className="w-full h-full flex flex-col justify-center items-center">
-                {open
+                {(open && thumnailObjectURL)
                     && <div className="photo-container flex flex-col items-center justify-center">
                         <img
+                            className="thumbnail"
+                            src={thumnailObjectURL}
+                            />
+                        <img
+                            className={classNames("full", { "loaded": fullAssetLoaded })}
                             data-testid="fullsize-asset"
-                            src={api.makeUrl(`/thumb?id=${asset._id}`)}
-                            onLoad={event => {
-                                const img = event.target as HTMLImageElement;
-                                img.src = api.makeUrl(`/display?id=${asset._id}`);
+                            src={api.makeUrl(`/display?id=${asset._id}`)}
+                            onLoad={() => {
+                                setFullAssetLoaded(true);
                             }}
                             />
                         {asset.photographer
                             && <div 
                                 style={{
                                     position: "absolute",
-                                    bottom: 20,
+                                    bottom: 5,
                                     zIndex: 10000,
                                 }}
                                 className="text-center pt-2"
