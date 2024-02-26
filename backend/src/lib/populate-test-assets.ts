@@ -283,7 +283,7 @@ export async function downloadHighResAssets(storage: IStorage): Promise<void> {
 
     for await (const assetId of enumerateAssets(storage)) {
        
-        if (await storage.exists("display", assetId) && await storage.exists("original", assetId)) {
+        if (await storage.exists("display", assetId)) {
             console.log(`Already downloaded ${assetId}`);
             continue;
         }
@@ -299,7 +299,6 @@ export async function downloadHighResAssets(storage: IStorage): Promise<void> {
             display = asset.properties.fullData.src.large;
             console.log(`Downloading ${assetId}`);
 
-            await storage.writeStream("original", assetId.toString(), "image/jpg", await streamUrl(full));
             await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
 
             console.log("Done");
@@ -311,13 +310,11 @@ export async function downloadHighResAssets(storage: IStorage): Promise<void> {
             display = asset.properties.fullData.urls.regular;
             console.log(`Downloading ${assetId}`);
 
-            await storage.writeStream("original", assetId.toString(), "image/jpg", await streamUrl(full));
             await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
 
             console.log("Done");
         
-            await sleep(100);
-        
+            await sleep(100);        
         }
         else {
             console.log(`${assetId}`);
