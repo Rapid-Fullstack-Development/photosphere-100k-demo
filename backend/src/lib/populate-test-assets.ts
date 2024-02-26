@@ -60,8 +60,12 @@ async function* enumerateAssets(storage: IStorage) {
 
     while (true) {
         const result = await storage.list("metadata", continuation);
-        for (const assetId of result.assetsIds) {
-            yield assetId;
+
+        //
+        // Yield assets in 100 item batches.
+        //
+        for (let i = 0; i < result.assetsIds.length; i += 100) {
+            yield result.assetsIds.slice(i, i + 100);
         }
 
         if (result.continuation) {
@@ -249,43 +253,43 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
     let fixedDescriptions = 0;
     let totalAssets = 0;
 
-    for await (const assetId of enumerateAssets(storage)) {
-        // console.log(assetId);
-        
-        const data = await storage.read("metadata", assetId);
-        const asset = JSON.parse(data!.toString("utf-8")) as IAsset;
-        if (!asset.description) {
-            console.log(`Missing description for ${assetId}`);
-            console.log(JSON.stringify(asset, null, 2));
+    for await (const assetIds of enumerateAssets(storage)) {
+        for (const assetId of assetIds) {
+            // console.log(assetId);
+            
+            const data = await storage.read("metadata", assetId);
+            const asset = JSON.parse(data!.toString("utf-8")) as IAsset;
+            if (!asset.description) {
+                console.log(`Missing description for ${assetId}`);
+                console.log(JSON.stringify(asset, null, 2));
 
-            if (asset.properties?.fullData?.alt) {
-                console.log(`Adding description for ${assetId}`);
+                if (asset.properties?.fullData?.alt) {
+                    console.log(`Adding description for ${assetId}`);
 
-                asset.description = asset.properties.fullData.alt;
-                await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+                    asset.description = asset.properties.fullData.alt;
+                    await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
 
-                fixedDescriptions += 1;
+                    fixedDescriptions += 1;
+                }
+
+                missingDescriptions += 1;
             }
 
-            missingDescriptions += 1;
+            totalAssets += 1;
         }
-
-        totalAssets += 1;
     }   
 
     console.log(`Found ${missingDescriptions} assets out of ${totalAssets}. Fixed ${fixedDescriptions} descriptions.`);
 }
 
 //
-// Download high resolution assets.
+// Download a high resolution asset.
 //
-export async function downloadHighResAssets(storage: IStorage): Promise<void> {
-
-    for await (const assetId of enumerateAssets(storage)) {
-       
+async function downloadHighResAsset(storage: IStorage, assetId: string): Promise<void> {
+    try {
         if (await storage.exists("display", assetId)) {
             console.log(`Already downloaded ${assetId}`);
-            continue;
+            return;
         }
 
         const data = await storage.read("metadata", assetId);
@@ -297,29 +301,46 @@ export async function downloadHighResAssets(storage: IStorage): Promise<void> {
         if (asset.properties?.fullData?.src?.original && asset.properties?.fullData?.src?.large) {
             full = asset.properties.fullData.src.original;
             display = asset.properties.fullData.src.large;
-            console.log(`Downloading ${assetId}`);
-
+            
             await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
 
-            console.log("Done");
-        
-            await sleep(100);
+            console.log(`Downloaded ${assetId}`);
         } 
         else if (asset.properties?.fullData?.urls?.full && asset.properties?.fullData?.urls?.regular) {
             full = asset.properties.fullData.urls.full;
             display = asset.properties.fullData.urls.regular;
-            console.log(`Downloading ${assetId}`);
-
+            
             await storage.writeStream("display", assetId.toString(), "image/jpg", await streamUrl(display));
 
-            console.log("Done");
-        
-            await sleep(100);        
+            console.log(`Downloaded ${assetId}`);
         }
         else {
             console.log(`${assetId}`);
             console.log(JSON.stringify(asset, null, 2)); 
+            
+            throw new Error(`No full or display URL for ${assetId}`);
         }
     }
+    catch (err) {
+        console.error(`Failed on ${assetId}`);
+        console.error(err);
+    }
+}
 
+//
+// Download high resolution assets.
+//
+export async function downloadHighResAssets(storage: IStorage): Promise<void> {
+
+    console.log(`Downloading high resolution assets.`);
+
+    for await (const assetIds of enumerateAssets(storage)) {
+        await Promise.all(assetIds.map(assetId => downloadHighResAsset(storage, assetId)));
+
+        // for (const assetId of assetIds) {
+        //     await downloadHighResAsset(storage, assetId);
+        // }
+    }
+
+    console.log(`Done.`);
 }
