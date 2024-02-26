@@ -54,7 +54,11 @@ export function AssetView({ open, onClose, onNext, onPrev }: IAssetViewProps) {
                     && <div className="photo-container flex flex-col items-center justify-center">
                         <img
                             data-testid="fullsize-asset"
-                            src={api.makeUrl(`/display?id=${asset._id}`)}
+                            src={api.makeUrl(`/thumb?id=${asset._id}`)}
+                            onLoad={event => {
+                                const img = event.target as HTMLImageElement;
+                                img.src = api.makeUrl(`/display?id=${asset._id}`);
+                            }}
                             />
                         {asset.photographer
                             && <div 
