@@ -401,7 +401,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
                 const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
                 next = result.continuation;
 
-                console.log(`Loaded page ${pageIndex} from storage.`);
+                console.log(`Loaded thumb page ${pageIndex} from storage.`);
                 continue;
             }
 
@@ -442,6 +442,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
             console.error(err);
         });
 
+    //
+    // Retreives a page containing many thumbnails.
+    //
     app.get("/thumb-page", async (req, res) => {
 
         const pageIndex = getIntQueryParam(req, "index");
@@ -566,67 +569,103 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Assets cached in memory to test the difference that it makes loading assets from S3.
     // Assets are divided up into pages.
     //
-    // const cachedAssets: IMinimalAsset[][] = [];
+    const cachedAssets: IMinimalAsset[][] = [];
+
+    const ASSET_PAGE_SIZE = 1000;
+
 
     //
     // Loads the next page of assets.
     //
-    // async function loadPage(next: string | undefined): Promise<{ assets: IMinimalAsset[], next?: string }> {
-    //     const result = await storage.list("metadata", next);
-    //     const assets = await Promise.all(result.assetsIds.map(
-    //         async (assetId) => {
-    //             const data = await storage.read("metadata", assetId);
-    //             const asset = JSON.parse(data!.toString("utf-8"));
-    //             let photographer;
-    //             if (asset.properties.fullData?.user) {
-    //                 photographer = {
-    //                     name: asset.properties.fullData.user.name,
-    //                     url: asset.properties.fullData.user.links.html,
-    //                 };
-    //             }
-    //             else if (asset.properties.fullData?.photographer) {
-    //                 photographer = {
-    //                     name: asset.properties.fullData.photographer,
-    //                     url: asset.properties.fullData.photographer_url,
-    //                 };
-    //             }
-    //             return {
-    //                 _id: asset._id,
-    //                 width: asset.width,
-    //                 height: asset.height,
-    //                 description: asset.description,
-    //                 labels: asset.labels,
-    //                 sortDate: asset.sortDate,
-    //                 photographer,
-    //             };
-    //         }
-    //     ));
-    //     return { assets, next: result.continuation };
-    // }
+    async function loadPage(pageIndex: number, next: string | undefined): Promise<{ assets: IMinimalAsset[], next?: string }> {
 
-    // // 
-    // // Loads all assets into memory.
-    // //
-    // async function loadAllAssets(): Promise<void> {
-    //     console.log("Loading all assets into memory...");
-    //     let numAssets = 0;
-    //     let current: string | undefined = undefined;
-    //     do {
-    //         const { assets, next } = await loadPage(current);
-    //         cachedAssets.push(assets);
-    //         numAssets += assets.length;
-    //         console.log(`Now have ${numAssets} assets in memory.`);
+        let assets: IMinimalAsset[];
 
-    //         current = next;
-    //     } while (current);
+        //
+        // Have to hit storage regardless to get the next page.
+        //
+        const result = await storage.list("metadata", ASSET_PAGE_SIZE, next);
 
-    //     console.log(`** Loaded ${numAssets} assets into memory.`);
-    // }
+        //
+        // Load the next page of assets from storage.
+        //
+        const cachedPage = await storage.read(`asset-pages-${THUMBS_PER_PAGE}`, pageIndex.toString());
+        if (cachedPage) {
+            console.log(`Loaded asset page ${pageIndex} from storage.`);
+
+            assets = JSON.parse(cachedPage.toString("utf-8"));
+        }
+        else {
+            assets = await Promise.all(result.assetsIds.map(
+                async (assetId) => {
+                    const data = await storage.read("metadata", assetId);
+                    const asset = JSON.parse(data!.toString("utf-8"));
+                    let photographer;
+                    if (asset.properties.fullData?.user) {
+                        photographer = {
+                            name: asset.properties.fullData.user.name,
+                            url: asset.properties.fullData.user.links.html,
+                        };
+                    }
+                    else if (asset.properties.fullData?.photographer) {
+                        photographer = {
+                            name: asset.properties.fullData.photographer,
+                            url: asset.properties.fullData.photographer_url,
+                        };
+                    }
+                    return {
+                        _id: asset._id,
+                        width: asset.width,
+                        height: asset.height,
+                        description: asset.description,
+                        labels: asset.labels,
+                        sortDate: asset.sortDate,
+                        photographer,
+                    };
+                }
+            ));
+    
+            //
+            // Write the asset page to storage.
+            //
+            await storage.write(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString(), "application/json", Buffer.from(JSON.stringify(assets, null, 2)));
+    
+            console.log(`Wrote asset page ${pageIndex} to storage.`)
+        }
+
+        return { assets, next: result.continuation };
+    }
+
+    // 
+    // Loads all assets into memory.
+    //
+    async function loadAllAssets(): Promise<void> {
+        console.log("Loading all assets into memory...");
+        
+        let numAssets = 0;
+        let current: string | undefined = undefined;
+        let pageIndex = 0;
+        
+        do {
+            const { assets, next } = await loadPage(pageIndex, current);
+            cachedAssets.push(assets);
+            numAssets += assets.length;
+            console.log(`Now have ${numAssets} assets in memory.`);
+
+            current = next;
+            pageIndex++;
+
+        } while (current);
+
+        console.log(`** Loaded ${numAssets} assets into memory.`);
+    }
 
     //
     // Gets a paginated list of all assets.
     //
     app.get("/assets", async (req, res) => {
+
+        //todo: load asset page from storage
 
         // Cached
 
@@ -665,11 +704,11 @@ export async function createServer(now: () => Date, storage: IStorage) {
 
     // processTestAssets(storage);
 
-    // loadAllAssets()
-    //     .catch(err => {
-    //         console.error("Failed to load all assets into memory.");
-    //         console.error(err);
-    //     });
+    loadAllAssets()
+        .catch(err => {
+            console.error("Failed to load all assets into memory.");
+            console.error(err);
+        });
 
     // downloadHighResAssets(storage)
     //     .catch(err => {
