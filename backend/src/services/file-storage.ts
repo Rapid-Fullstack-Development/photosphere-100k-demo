@@ -79,7 +79,7 @@ export class FileStorage implements IStorage {
     //
     // Writes a file to storage.
     //
-    async write(type: string, assetId: string, contentType: string, data: string): Promise<void> {
+    async write(type: string, assetId: string, contentType: string, data: Buffer): Promise<void> {
         await fs.writeFile(this.getLocalFileName(type, assetId), data);
         await fs.writeFile(this.getInfoFileName(type, assetId), JSON.stringify({
             contentType: contentType,

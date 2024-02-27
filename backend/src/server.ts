@@ -78,7 +78,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Writes metadata for an asset.
     //
     async function writeMetadata(assetId: string, asset: IAsset): Promise<void> {
-        await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+        await storage.write("metadata", assetId, "application/json", Buffer.from(JSON.stringify(asset, null, 2)));
     }
 
     //
@@ -106,7 +106,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Tracks a new hash to an asset id.
     //
     async function updateHash(hash: string, assetId: string): Promise<void> {
-        await storage.write("hash", hash, "text/plain", assetId);
+        await storage.write("hash", hash, "text/plain", Buffer.from(assetId));
     }
 
     //
@@ -304,12 +304,22 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //
     // Load a page of thumbnails into a buffer.
     //
-    async function loadThumbsPage(pageIndex: number, next?: string): Promise<[Buffer, string?]> {
+    async function loadThumbsPage(pageIndex: number, next?: string): Promise<[Buffer, string?] | undefined> {
 
         const offsetEntrySize = 4; // Size of the offset entry in bytes (UInt32)
         const headerSize = THUMBS_PER_PAGE * offsetEntrySize;
 
+        //
+        // List all thumbnail assets in the next page.
+        //
         const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
+        if (result.assetsIds.length === 0) {
+            return undefined;
+        }
+        
+        //
+        // Load all thumbnails into buffers.
+        //
         const thumbBuffers = await Promise.all(result.assetsIds.map(
             async assetId => {
                 const assetInfo = await storage.info("thumb", assetId); //todo: Need this for content type.
@@ -318,6 +328,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
             },
         ));
         
+        //
+        // Create the offset table for the thumbnails in the page.
+        //
         const headerBuffer = Buffer.alloc(headerSize);
         const buffers = [ headerBuffer ]; // Initialize buffer array with header space.
         let currentOffset = headerSize; // Start offset after the header.
@@ -351,7 +364,9 @@ export async function createServer(now: () => Date, storage: IStorage) {
         // console.log(`Page index ${pageIndex} has ${thumbBuffers.length} thumbs.`);
         // console.log(images);
 
-        // Concatenate all the buffers.
+        //
+        // Concatenate the offset table and thumbnail buffers to form the page.
+        //
         const thumbPage = Buffer.concat(buffers);
 
         // For debugging:
@@ -372,7 +387,43 @@ export async function createServer(now: () => Date, storage: IStorage) {
         let next: string | undefined = undefined;
         let pageIndex = 0;
         do {
-            const [thumbPage, continuation] = await loadThumbsPage(pageIndex, next);
+            //
+            // If the page already exists in storage, just load it into the cache from there.
+            //
+            const cachedPage = await storage.read(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString());
+            if (cachedPage) {
+                thumbPages.push(cachedPage);
+                pageIndex++;
+
+                //
+                // Still need to read storage to skip the next page!
+                //
+                const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
+                next = result.continuation;
+
+                console.log(`Loaded page ${pageIndex} from storage.`);
+                continue;
+            }
+
+            //
+            // Generate the next page of thumbnails.
+            //
+            const result = await loadThumbsPage(pageIndex, next);
+            if (result === undefined) {
+                // Now more assets.
+                break;
+            }
+
+            const [ thumbPage, continuation ] = result;
+
+            //
+            // Write the thumb to storage.
+            //
+            await storage.write(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString(), "application/octet-stream", thumbPage);
+
+            //
+            // Cache the page.
+            //
             thumbPages.push(thumbPage);
             next = continuation;
             pageIndex++;

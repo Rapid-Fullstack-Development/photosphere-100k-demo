@@ -121,7 +121,7 @@ export class CloudStorage implements IStorage {
     //
     // Writes a file to storage.
     //
-    async write(type: string, assetId: string, contentType: string, data: string): Promise<void> {
+    async write(type: string, assetId: string, contentType: string, data: Buffer): Promise<void> {
         const params: aws.S3.Types.PutObjectRequest = {
             Bucket: this.bucket,
             Key: `${type}/${assetId}`,

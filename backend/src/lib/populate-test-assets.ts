@@ -229,10 +229,10 @@ async function uploadAsset(photo: any, storage: IStorage): Promise<boolean> {
     };
 
     // Metadata.
-    await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+    await storage.write("metadata", assetId, "application/json", Buffer.from(JSON.stringify(asset, null, 2)));
 
     // Update hash.
-    await storage.write("hash", hash, "text/plain", assetId);
+    await storage.write("hash", hash, "text/plain", Buffer.from(assetId));
 
     // Upload assets.
     await storage.writeStream("original", assetId.toString(), "image/jpg", await streamUrl(thumb));
@@ -267,7 +267,7 @@ export async function processTestAssets(storage: IStorage): Promise<void> {
                     console.log(`Adding description for ${assetId}`);
 
                     asset.description = asset.properties.fullData.alt;
-                    await storage.write("metadata", assetId, "application/json", JSON.stringify(asset, null, 2));
+                    await storage.write("metadata", assetId, "application/json", Buffer.from(JSON.stringify(asset, null, 2)));
 
                     fixedDescriptions += 1;
                 }
