@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-
 import { useImageQueue } from "../context/image-queue-context";
 
 export interface IImageProps {

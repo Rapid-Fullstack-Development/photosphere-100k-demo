@@ -19,7 +19,7 @@ export class FileStorage implements IStorage {
     //
     // List files in storage.
     //
-    async list(type: string, continuationToken?: string): Promise<IListResult> {
+    async list(type: string, max: number, continuationToken?: string): Promise<IListResult> {
         let files = await fs.readdir(path.join("files", type));
         files = files.filter(file => !file.endsWith(".info"));
         return {
@@ -47,7 +47,6 @@ export class FileStorage implements IStorage {
     async exists(type: string, assetId: string): Promise<boolean> {
         return await fs.pathExists(this.getLocalFileName(type, assetId));
     }
-
 
     //
     // Gets info about an asset.

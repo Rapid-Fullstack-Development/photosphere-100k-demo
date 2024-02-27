@@ -40,7 +40,7 @@ export interface IStorage {
     //
     // List files in storage.
     //
-    list(type: string, continuationToken?: string): Promise<IListResult>;
+    list(type: string, max: number, continuationToken?: string): Promise<IListResult>;
 
     //
     // Returns true if the specified asset exists.

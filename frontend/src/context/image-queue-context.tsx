@@ -1,6 +1,7 @@
 import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
-import { loadImageAsDataURL, loadImageAsObjectURL, unloadObjectURL } from "../lib/image";
+import { loadImageAsDataURL, loadImageAsObjectURL, loadObjectURLFromBuffer, unloadObjectURL } from "../lib/image";
 import { useApi } from "./api-context";
+import { usePageCache } from "./page-cache";
 
 export type ImageLoadedFn = (dataUrl: string) => void;
 
@@ -55,9 +56,9 @@ export interface IProps {
 export function ImageQueueContextProvider({ children }: IProps) {
 
     //
-    // Interface to the API.
+    // Interface to the page cache.
     //
-    const api = useApi();
+    const { loadImage: loadImageFromPage, unloadImage: unloadImageFromPage } = usePageCache();
 
     //
     // An entry in the image queue for an image to be loaded.
@@ -150,12 +151,20 @@ export function ImageQueueContextProvider({ children }: IProps) {
 
         // console.log(`$$ Loading image: ${entry.assetGlobalIndex}`);
 
-        //
-        // Load the image.
-        //
-        const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
         const timeStart = performance.now();
-        const objectURL = await loadImageAsObjectURL(imageUrl);
+
+        //
+        // Load the image from a page.
+        //
+        const [imageBuffer, contentType] = await loadImageFromPage(entry.assetGlobalIndex);
+        const objectURL = await loadObjectURLFromBuffer(imageBuffer, contentType);
+        
+        //
+        // Load the image from a URL.
+        //
+        // const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
+        // const objectURL = await loadImageAsObjectURL(imageUrl);
+
         const timeElapsed = performance.now() - timeStart;
         loadTime.current.set(entry.assetGlobalIndex, timeElapsed);
         cachedEntry.objectURL = objectURL;
@@ -204,6 +213,7 @@ export function ImageQueueContextProvider({ children }: IProps) {
                 if (cacheEntry.numRefs <= 0) {
                     imageCache.current.delete(assetGlobalIndex);
                     unloadObjectURL(cacheEntry.objectURL!);
+                    unloadImageFromPage(assetGlobalIndex);
                 }
             }
         }

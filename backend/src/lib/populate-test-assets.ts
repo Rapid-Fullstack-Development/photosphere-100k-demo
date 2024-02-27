@@ -35,11 +35,11 @@ let assetUploads = 0;
 // 
 export async function countAssets(storage: IStorage): Promise<number> {
     let count = 0;
-    let continuation = undefined;
+    let continuation: string | undefined = undefined;
 
     while (true) {
         // const result = await storage.list("metadata", continuation);
-        const result = await storage.list("original", continuation);
+        const result = await storage.list("original", 1000, continuation);
         count += result.assetsIds.length;
         if (result.continuation) {
             continuation = result.continuation;
@@ -59,7 +59,7 @@ async function* enumerateAssets(storage: IStorage) {
     let continuation = undefined;
 
     while (true) {
-        const result = await storage.list("metadata", continuation);
+        const result = await storage.list("metadata", 1000, continuation);
 
         //
         // Yield assets in 100 item batches.

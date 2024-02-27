@@ -45,11 +45,11 @@ export class CloudStorage implements IStorage {
     //
     // List files in storage.
     //
-    async list(type: string, continuationToken?: string): Promise<IListResult> {    
+    async list(type: string, max: number, continuationToken?: string): Promise<IListResult> {    
         const listParams: aws.S3.Types.ListObjectsV2Request = {
             Bucket: this.bucket,
             Prefix: `${type}/`,
-            MaxKeys: 1000,
+            MaxKeys: max,
             ContinuationToken: continuationToken,
         };
 

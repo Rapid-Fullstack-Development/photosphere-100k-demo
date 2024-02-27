@@ -71,6 +71,13 @@ GET {{base_url}}/thumb?id={{upload_asset_id}}
 
 ###
 #
+# Gets a thumbnail page.
+#
+
+GET {{base_url}}/thumb-page?index=0
+
+###
+#
 # Uploads the display version of an asset.
 #
 

@@ -7,6 +7,7 @@ import { IGalleryLayout } from "../lib/create-layout";
 import { useGallery } from "../context/gallery-context";
 import { throttle } from "lodash";
 import { useImageQueue } from "../context/image-queue-context";
+import { usePageCache } from "../context/page-cache";
 
 export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
 
@@ -131,6 +132,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
     const [scrollTop, setScrollTop] = useState(0);
     const { numChangedImages, clearQueue, queueHighPriorityImage, queueLowPriorityImage, loadImages } = useImageQueue();
+    const { numCachedPages } = usePageCache();
     
     //
     // Rebuild layout when necessary. 
@@ -267,7 +269,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     bottom: "60px",
                     right: "30px",
                     width: "200px",
-                    height: "120px",
+                    height: "140px",
                     color: "black",
                     backgroundColor: "white",
                     border: "1px solid black",
@@ -285,6 +287,9 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                 </p>
                 <p>
                     Cached images: {numChangedImages()}
+                </p>
+                <p>
+                    Cached pages: {numCachedPages()}
                 </p>
             </div>
         </div>

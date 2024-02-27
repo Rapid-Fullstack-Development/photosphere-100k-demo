@@ -297,6 +297,112 @@ export async function createServer(now: () => Date, storage: IStorage) {
         stream.pipe(res);
     });
 
+    const thumbPages: Buffer[] = [];
+
+    const THUMBS_PER_PAGE = 100;
+
+    //
+    // Load a page of thumbnails into a buffer.
+    //
+    async function loadThumbsPage(pageIndex: number, next?: string): Promise<[Buffer, string?]> {
+
+        const offsetEntrySize = 4; // Size of the offset entry in bytes (UInt32)
+        const headerSize = THUMBS_PER_PAGE * offsetEntrySize;
+
+        const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
+        const thumbBuffers = await Promise.all(result.assetsIds.map(
+            async assetId => {
+                const assetInfo = await storage.info("thumb", assetId); //todo: Need this for content type.
+                const thumb = await storage.read("thumb", assetId);
+                return thumb!;
+            },
+        ));
+        
+        const headerBuffer = Buffer.alloc(headerSize);
+        const buffers = [ headerBuffer ]; // Initialize buffer array with header space.
+        let currentOffset = headerSize; // Start offset after the header.
+        
+        // For debugging:
+        //const images: any[] = [];
+
+        let thumbIndex = 0;
+
+        for (; thumbIndex < thumbBuffers.length; thumbIndex++) {
+            const thumbBuffer = thumbBuffers[thumbIndex];
+            buffers.push(thumbBuffer);
+
+            // For debugging:
+            // images.push({
+            //     offset: currentOffset,
+            //     size: thumbBuffer.length,
+            // });
+            
+            // Write the current offset to the header (position in the header buffer).
+            headerBuffer.writeUInt32LE(currentOffset, thumbIndex * offsetEntrySize);
+            currentOffset += thumbBuffer.length; // Move current offset forward.
+        }   
+
+        for (; thumbIndex < THUMBS_PER_PAGE; thumbIndex++) {
+            // For missing images, write 0 (or you could leave it as it's already zeroed)
+            buffers[0].writeUInt32LE(0, thumbIndex * offsetEntrySize);
+        }          
+
+        // For debugging:
+        // console.log(`Page index ${pageIndex} has ${thumbBuffers.length} thumbs.`);
+        // console.log(images);
+
+        // Concatenate all the buffers.
+        const thumbPage = Buffer.concat(buffers);
+
+        // For debugging:
+        // console.log(thumbPage.slice(0, 100).toString("hex"));
+
+        return [
+            thumbPage,
+            result.continuation,
+        ];
+    }
+
+    //
+    // Load all thumbnails into pages.
+    //
+    async function preloadThumbPages(): Promise<void> {
+        console.log("Preloading thumbs...");
+
+        let next: string | undefined = undefined;
+        let pageIndex = 0;
+        do {
+            const [thumbPage, continuation] = await loadThumbsPage(pageIndex, next);
+            thumbPages.push(thumbPage);
+            next = continuation;
+            pageIndex++;
+
+            console.log(`Loaded ${thumbPages.length} thumb pages.`);
+
+        } while (next);
+
+        
+        console.log(`Finished preloading ${thumbPages.length} thumb pages.`);
+    }
+
+    preloadThumbPages()
+        .catch(err => {
+            console.error("Failed to preload thumbs.");
+            console.error(err);
+        });
+
+    app.get("/thumb-page", async (req, res) => {
+
+        const pageIndex = getIntQueryParam(req, "index");
+        if (pageIndex < 0 || pageIndex >= thumbPages.length) {
+            res.sendStatus(404);
+            return;
+        }
+
+        res.set("Content-Type", "application/octet-stream");
+        res.send(thumbPages[pageIndex]);
+    });
+
     //
     // Uploads a display version for a particular asset.
     //
@@ -482,7 +588,7 @@ export async function createServer(now: () => Date, storage: IStorage) {
         // S3
 
         const next = req.query.next as string;
-        const result = await storage.list("metadata", next);
+        const result = await storage.list("metadata", 1000, next);
         const assets = await Promise.all(result.assetsIds.map(
             async assetId => { 
                 const buffer = await storage.read("metadata", assetId);

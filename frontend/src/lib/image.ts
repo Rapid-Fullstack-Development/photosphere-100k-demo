@@ -26,6 +26,14 @@ export async function loadImageAsObjectURL(imageUrl: string): Promise<string>  {
 }
 
 //
+// Loads an object URL from a ArrayBuffer.
+//
+export async function loadObjectURLFromBuffer(imageBuffer: ArrayBuffer, contentType: string): Promise<string> {
+    const blob = new Blob([ imageBuffer ], { type: contentType });
+    return URL.createObjectURL(blob);
+}
+
+//
 // Frees up memory used by an object URL.
 //
 export function unloadObjectURL(objectURL: string) {
