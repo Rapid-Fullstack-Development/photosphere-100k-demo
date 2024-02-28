@@ -154,7 +154,7 @@ export function GalleryContextProvider({ children }: IProps) {
 
         // let maxPages = 1; // Limit the number of pages to load for testing.
 
-        console.log(`== Loading assets...`)
+        // console.log(`== Loading assets...`);
 
         while (true) {
             const newAssets = await api.getAssets(pageIndex);
@@ -190,7 +190,7 @@ export function GalleryContextProvider({ children }: IProps) {
                 assetGlobalIndex += 1; // Identify assets by their index in the array.
             }
 
-            console.log(`== Added page ${pageIndex} of ${newAssets.length} assets.`);
+            // console.log(`== Added page ${pageIndex} of ${newAssets.length} assets.`);
 
             // 
             // Trigger rerender to display the first page of assets.
@@ -230,7 +230,7 @@ export function GalleryContextProvider({ children }: IProps) {
         }
 
         if (loadingFinishedRef.current) {
-            console.log(`>> Enumerating loaded assets #${loadedAssetsRef.current.length}`);
+            // console.log(`>> Enumerating loaded assets #${loadedAssetsRef.current.length}`);
 
             //
             // Loading of assets has finished.
@@ -241,7 +241,7 @@ export function GalleryContextProvider({ children }: IProps) {
             }                                
         }
         else {
-            console.log(`>> Enumerating loading assets #${loadedAssetsRef.current.length}`);
+            // console.log(`>> Enumerating loading assets #${loadedAssetsRef.current.length}`);
             
             //
             // Loading of assets is still in progress.
@@ -264,14 +264,14 @@ export function GalleryContextProvider({ children }: IProps) {
                 // If there are 1000 more, continue to yield them as they are loaded.
                 //
                 if (loadedAssetsRef.current.length-i >= 1000) {
-                    console.log(`>> Enumerating more assets #${loadedAssetsRef.current.length-i}`);
+                    // console.log(`>> Enumerating more assets #${loadedAssetsRef.current.length-i}`);
 
                     yield loadedAssetsRef.current.slice(i, i+1000);
                     i += 1000;                    
                 }
             }
 
-            console.log(`>> Assets have finished loading, enumerating remaining #${loadedAssetsRef.current.length-i}`)
+            // console.log(`>> Assets have finished loading, enumerating remaining #${loadedAssetsRef.current.length-i}`)
 
             //
             // If any are remaining, yield them.
@@ -280,7 +280,7 @@ export function GalleryContextProvider({ children }: IProps) {
                 yield loadedAssetsRef.current.slice(i);
             }
 
-            console.log(`>> Finished enumerating assets #${loadedAssetsRef.current.length}`);
+            // console.log(`>> Finished enumerating assets #${loadedAssetsRef.current.length}`);
         }
     }
 
