@@ -147,21 +147,18 @@ export function GalleryContextProvider({ children }: IProps) {
         });
         searchIndexRef.current = searchIndex;
 
+        let continuation: string | undefined = undefined;
         let loadedAssets: IGalleryItem[] = [];
 
         let firstPageLoaded = false;
-        let pageIndex = 0;
 
         // let maxPages = 1; // Limit the number of pages to load for testing.
 
         // console.log(`== Loading assets...`);
 
         while (true) {
-            const newAssets = await api.getAssets(pageIndex);
-            if (newAssets.length === 0) {
-                // Now more assets.
-                break;
-            }
+            const assetsResult = await api.getAssets(continuation);
+            const newAssets = assetsResult.assets;
 
             let assetGlobalIndex = loadedAssets.length;
 
@@ -200,7 +197,12 @@ export function GalleryContextProvider({ children }: IProps) {
                 setFirstPageLoaded(true);
             }
 
-            pageIndex += 1;
+            if (assetsResult.next === undefined) {
+                // Done.
+                break;
+            }
+
+            continuation = assetsResult.next;
 
             // maxPages -= 1;
             // if (maxPages <= 0) {

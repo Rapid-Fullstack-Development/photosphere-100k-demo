@@ -10,6 +10,21 @@ if (!BASE_URL) {
 
 console.log(`Expecting backend at ${BASE_URL}.`);
 
+//
+// Results from getting assets.
+//
+export interface IAssetsResult {
+    //
+    // The assets returned.
+    //
+    assets: IGalleryItem[];
+
+    //
+    // Identifies the next page of results, if any.
+    //
+    next?: string;
+}
+
 export interface IApiContext {
 
     //
@@ -20,7 +35,7 @@ export interface IApiContext {
     //
     // Retreives the list of assets from the backend.
     //
-    getAssets(pageIndex: number): Promise<IGalleryItem[]>;
+    getAssets(next?: string): Promise<IAssetsResult>;
 
     //
     // Check if an asset is already uploaded using its hash.
@@ -122,27 +137,24 @@ export function ApiContextProvider({ children }: IProps) {
     //
     // Retreives the list of assets from the backend.
     //
-    async function getAssets(pageIndex: number): Promise<IGalleryItem[]> {
-        let url = `${BASE_URL}/assets?index=${pageIndex}`;
+    async function getAssets(next?: string): Promise<IAssetsResult> {
+        let url = `${BASE_URL}/assets`;
+
+        if (next) {
+            url += `?next=${next}`;
+        }
 
         // const apiKey = await getApiKey();
-        const response = await axios.get(
+        const { data } = await axios.get(
             url, 
             { 
                 // headers: { 
                 //     "key": apiKey,
                 // },
-                validateStatus: function (status) {
-                    return (status >= 200 && status < 300) || status === 404; // Resolve only if status is in the range 200-299 or exactly 404
-                }
             }
         );
 
-        if (response.status === 404) {
-            return [];
-        }
-
-        return response.data;
+        return data;
     }
 
     //

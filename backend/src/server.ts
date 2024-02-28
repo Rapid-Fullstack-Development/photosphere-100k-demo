@@ -680,60 +680,67 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // }
 
     //
+    // Enables/disables paged (optimized) loading of assets.
+    //
+    const paged = true;
+
+    //
     // Gets a paginated list of all assets.
     //
     app.get("/assets", async (req, res) => {
 
-        //
-        // Load assets from asset pages in storage.
-        //
-        const pageIndex = getIntQueryParam(req, "index");
-        if (pageIndex < 0) {
-            res.sendStatus(404);
-            return;
+        const next = req.query.next as string;
+
+        if (paged) {
+            //
+            // Enables paged (optimized) loading of assets.
+            // This mode is good for fast loading.
+            //
+            const pageIndexStr = next !== undefined ? next : "0";
+            const cachedPage = await storage.read(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndexStr);
+            if (cachedPage === undefined) {
+                res.json({
+                    assets: [],
+                    next: undefined,
+                });
+                return;
+            }
+
+            const nextPageIndexStr = (parseInt(pageIndexStr) + 1).toString();
+            const assets = JSON.parse(cachedPage.toString("utf-8")); //TODO: Be great if we could away without parsing this JSON.
+            res.json({
+                assets: assets,
+                next: nextPageIndexStr,
+            });
         }
-
-        const cachedPage = await storage.read(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString());
-        if (!cachedPage) {
-            res.sendStatus(404);
-            return;
+        else {
+            //
+            // Enables slow asset by asset loading from storage.
+            // This mode is good for testing.
+            //
+            const result = await storage.list("metadata", 1000, next);
+            const assets = await Promise.all(result.assetsIds.map(
+                async assetId => { 
+                    const buffer = await storage.read("metadata", assetId);
+                    const data = buffer!.toString("utf-8");
+                    const asset = JSON.parse(data!);
+                    return { 
+                        _id: asset._id, 
+                        width: asset.width,
+                        height: asset.height,
+                        description: asset.description,
+                        labels: asset.labels,
+                    };
+                },
+            ));
+    
+            res.json({
+                assets: assets,
+                next: result.continuation,
+            });    
         }
-
-        res.set("Content-Type", "application/json");
-        res.send(cachedPage);
-
-        // Load assets from in memory cache.
-
-        // const current = req.query.next && parseInt(req.query.next as string) || 0;
-        // res.json({
-        //     assets: cachedAssets[current] || [],
-        //     next: current < cachedAssets.length - 1 ? current + 1 : undefined,
-        // });
-
-        // Load asset from S3
-
-        // const next = req.query.next as string;
-        // const result = await storage.list("metadata", 1000, next);
-        // const assets = await Promise.all(result.assetsIds.map(
-        //     async assetId => { 
-        //         const buffer = await storage.read("metadata", assetId);
-        //         const data = buffer!.toString("utf-8");
-        //         const asset = JSON.parse(data!);
-        //         return { 
-        //             _id: asset._id, 
-        //             width: asset.width,
-        //             height: asset.height,
-        //             description: asset.description,
-        //             labels: asset.labels,
-        //         };
-        //     },
-        // ));
-
-        // res.json({
-        //     assets: assets,
-        //     next: result.continuation,
-        // });
     });
+
 
     // exportUploadTestAssets(storage);
 
