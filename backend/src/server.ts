@@ -168,6 +168,20 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // });
 
     //
+    // Gets the metadata for an asset by id.
+    //
+    app.get("/metadata", async (req, res) => {
+
+        const assetId = req.query.id as string;
+        if (!assetId) {
+            throw new Error(`Asset ID not specified in query parameters.`);
+        }
+
+        const metadata = await readMetadata(assetId);
+        res.json(metadata);
+    });
+
+    //
     // Uploads a new asset.
     //
     // app.post("/asset", async (req, res) => {
