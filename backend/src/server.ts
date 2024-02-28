@@ -589,104 +589,120 @@ export async function createServer(now: () => Date, storage: IStorage) {
     // Assets cached in memory to test the difference that it makes loading assets from S3.
     // Assets are divided up into pages.
     //
-    const cachedAssets: IMinimalAsset[][] = [];
+    // const cachedAssets: IMinimalAsset[][] = [];
 
     const ASSET_PAGE_SIZE = 1000;
 
-    //
-    // Loads the next page of assets.
-    //
-    async function loadPage(pageIndex: number, next: string | undefined): Promise<{ assets: IMinimalAsset[], next?: string }> {
+    // //
+    // // Loads the next page of assets.
+    // //
+    // async function loadPage(pageIndex: number, next: string | undefined): Promise<{ assets: IMinimalAsset[], next?: string }> {
 
-        let assets: IMinimalAsset[];
+    //     let assets: IMinimalAsset[];
 
-        //
-        // Have to hit storage regardless to get the next page.
-        //
-        const result = await storage.list("metadata", ASSET_PAGE_SIZE, next);
+    //     //
+    //     // Have to hit storage regardless to get the next page.
+    //     //
+    //     const result = await storage.list("metadata", ASSET_PAGE_SIZE, next);
 
-        //
-        // Load the next page of assets from storage.
-        //
-        const cachedPage = await storage.read(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString());
-        if (cachedPage) {
-            console.log(`Loaded asset page ${pageIndex} from storage.`);
+    //     //
+    //     // Load the next page of assets from storage.
+    //     //
+    //     const cachedPage = await storage.read(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString());
+    //     if (cachedPage) {
+    //         console.log(`Loaded asset page ${pageIndex} from storage.`);
 
-            assets = JSON.parse(cachedPage.toString("utf-8"));
-        }
-        else {
-            assets = await Promise.all(result.assetsIds.map(
-                async (assetId) => {
-                    const data = await storage.read("metadata", assetId);
-                    const asset = JSON.parse(data!.toString("utf-8"));
-                    let photographer;
-                    if (asset.properties.fullData?.user) {
-                        photographer = {
-                            name: asset.properties.fullData.user.name,
-                            url: asset.properties.fullData.user.links.html,
-                        };
-                    }
-                    else if (asset.properties.fullData?.photographer) {
-                        photographer = {
-                            name: asset.properties.fullData.photographer,
-                            url: asset.properties.fullData.photographer_url,
-                        };
-                    }
-                    return {
-                        _id: asset._id,
-                        width: asset.width,
-                        height: asset.height,
-                        description: asset.description,
-                        labels: asset.labels,
-                        sortDate: asset.sortDate,
-                        photographer,
-                    };
-                }
-            ));
+    //         assets = JSON.parse(cachedPage.toString("utf-8"));
+    //     }
+    //     else {
+    //         assets = await Promise.all(result.assetsIds.map(
+    //             async (assetId) => {
+    //                 const data = await storage.read("metadata", assetId);
+    //                 const asset = JSON.parse(data!.toString("utf-8"));
+    //                 let photographer;
+    //                 if (asset.properties.fullData?.user) {
+    //                     photographer = {
+    //                         name: asset.properties.fullData.user.name,
+    //                         url: asset.properties.fullData.user.links.html,
+    //                     };
+    //                 }
+    //                 else if (asset.properties.fullData?.photographer) {
+    //                     photographer = {
+    //                         name: asset.properties.fullData.photographer,
+    //                         url: asset.properties.fullData.photographer_url,
+    //                     };
+    //                 }
+    //                 return {
+    //                     _id: asset._id,
+    //                     width: asset.width,
+    //                     height: asset.height,
+    //                     description: asset.description,
+    //                     labels: asset.labels,
+    //                     sortDate: asset.sortDate,
+    //                     photographer,
+    //                 };
+    //             }
+    //         ));
     
-            //
-            // Write the asset page to storage.
-            //
-            await storage.write(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString(), "application/json", Buffer.from(JSON.stringify(assets, null, 2)));
+    //         //
+    //         // Write the asset page to storage.
+    //         //
+    //         await storage.write(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString(), "application/json", Buffer.from(JSON.stringify(assets, null, 2)));
     
-            console.log(`Wrote asset page ${pageIndex} to storage.`)
-        }
+    //         console.log(`Wrote asset page ${pageIndex} to storage.`)
+    //     }
 
-        return { assets, next: result.continuation };
-    }
+    //     return { assets, next: result.continuation };
+    // }
 
-    // 
-    // Loads all assets into memory.
-    //
-    async function loadAllAssets(): Promise<void> {
-        console.log("Loading all assets into memory...");
+    // // 
+    // // Loads all assets into memory.
+    // //
+    // async function loadAllAssets(): Promise<void> {
+    //     console.log("Loading all assets into memory...");
         
-        let numAssets = 0;
-        let current: string | undefined = undefined;
-        let pageIndex = 0;
+    //     let numAssets = 0;
+    //     let current: string | undefined = undefined;
+    //     let pageIndex = 0;
         
-        do {
-            const { assets, next } = await loadPage(pageIndex, current);
-            cachedAssets.push(assets);
-            numAssets += assets.length;
-            console.log(`Now have ${numAssets} assets in memory.`);
+    //     do {
+    //         const { assets, next } = await loadPage(pageIndex, current);
+    //         cachedAssets.push(assets);
+    //         numAssets += assets.length;
+    //         console.log(`Now have ${numAssets} assets in memory.`);
 
-            current = next;
-            pageIndex++;
+    //         current = next;
+    //         pageIndex++;
 
-        } while (current);
+    //     } while (current);
 
-        console.log(`** Loaded ${numAssets} assets into memory.`);
-    }
+    //     console.log(`** Loaded ${numAssets} assets into memory.`);
+    // }
 
     //
     // Gets a paginated list of all assets.
     //
     app.get("/assets", async (req, res) => {
 
-        //todo: load asset page from storage
+        //
+        // Load assets from asset pages in storage.
+        //
+        const pageIndex = getIntQueryParam(req, "index");
+        if (pageIndex < 0) {
+            res.sendStatus(404);
+            return;
+        }
 
-        // Cached
+        const cachedPage = await storage.read(`asset-pages-${ASSET_PAGE_SIZE}`, pageIndex.toString());
+        if (!cachedPage) {
+            res.sendStatus(404);
+            return;
+        }
+
+        res.set("Content-Type", "application/json");
+        res.send(cachedPage);
+
+        // Load assets from in memory cache.
 
         // const current = req.query.next && parseInt(req.query.next as string) || 0;
         // res.json({
@@ -694,40 +710,40 @@ export async function createServer(now: () => Date, storage: IStorage) {
         //     next: current < cachedAssets.length - 1 ? current + 1 : undefined,
         // });
 
-        // S3
+        // Load asset from S3
 
-        const next = req.query.next as string;
-        const result = await storage.list("metadata", 1000, next);
-        const assets = await Promise.all(result.assetsIds.map(
-            async assetId => { 
-                const buffer = await storage.read("metadata", assetId);
-                const data = buffer!.toString("utf-8");
-                const asset = JSON.parse(data!);
-                return { 
-                    _id: asset._id, 
-                    width: asset.width,
-                    height: asset.height,
-                    description: asset.description,
-                    labels: asset.labels,
-                };
-            },
-        ));
+        // const next = req.query.next as string;
+        // const result = await storage.list("metadata", 1000, next);
+        // const assets = await Promise.all(result.assetsIds.map(
+        //     async assetId => { 
+        //         const buffer = await storage.read("metadata", assetId);
+        //         const data = buffer!.toString("utf-8");
+        //         const asset = JSON.parse(data!);
+        //         return { 
+        //             _id: asset._id, 
+        //             width: asset.width,
+        //             height: asset.height,
+        //             description: asset.description,
+        //             labels: asset.labels,
+        //         };
+        //     },
+        // ));
 
-        res.json({
-            assets: assets,
-            next: result.continuation,
-        });
+        // res.json({
+        //     assets: assets,
+        //     next: result.continuation,
+        // });
     });
 
     // exportUploadTestAssets(storage);
 
     // processTestAssets(storage);
 
-    loadAllAssets()
-        .catch(err => {
-            console.error("Failed to load all assets into memory.");
-            console.error(err);
-        });
+    // loadAllAssets()
+    //     .catch(err => {
+    //         console.error("Failed to load all assets into memory.");
+    //         console.error(err);
+    //     });
 
     // downloadHighResAssets(storage)
     //     .catch(err => {
