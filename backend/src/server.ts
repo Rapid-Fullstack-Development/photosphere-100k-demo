@@ -311,166 +311,166 @@ export async function createServer(now: () => Date, storage: IStorage) {
         stream.pipe(res);
     });
 
-    const thumbPages: Buffer[] = [];
+    // const thumbPages: Buffer[] = [];
 
     const THUMBS_PER_PAGE = 100;
 
-    //
-    // Load a page of thumbnails into a buffer.
-    //
-    async function loadThumbsPage(pageIndex: number, next?: string): Promise<[Buffer | undefined, string?] | undefined> {
+    // //
+    // // Load a page of thumbnails into a buffer.
+    // //
+    // async function loadThumbsPage(pageIndex: number, next?: string): Promise<[Buffer | undefined, string?] | undefined> {
 
-        const offsetEntrySize = 4; // Size of the offset entry in bytes (UInt32)
-        const headerSize = THUMBS_PER_PAGE * offsetEntrySize;
+    //     const offsetEntrySize = 4; // Size of the offset entry in bytes (UInt32)
+    //     const headerSize = THUMBS_PER_PAGE * offsetEntrySize;
 
-        //
-        // List all thumbnail assets in the next page.
-        //
-        const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
-        if (result.assetsIds.length === 0) {
-            return undefined;
-        }
+    //     //
+    //     // List all thumbnail assets in the next page.
+    //     //
+    //     const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
+    //     if (result.assetsIds.length === 0) {
+    //         return undefined;
+    //     }
 
-        if (pageIndex >= 657) { // Only want to rebuild pages after this index.
+    //     if (pageIndex >= 657) { // Only want to rebuild pages after this index.
         
-            //
-            // Load all thumbnails into buffers.
-            //
-            const thumbBuffers = await Promise.all(result.assetsIds.map(
-                async assetId => {
-                    const assetInfo = await storage.info("thumb", assetId); //todo: Need this for content type.
-                    const thumb = await storage.read("thumb", assetId);
-                    return thumb!;
-                },
-            ));
+    //         //
+    //         // Load all thumbnails into buffers.
+    //         //
+    //         const thumbBuffers = await Promise.all(result.assetsIds.map(
+    //             async assetId => {
+    //                 const assetInfo = await storage.info("thumb", assetId); //todo: Need this for content type.
+    //                 const thumb = await storage.read("thumb", assetId);
+    //                 return thumb!;
+    //             },
+    //         ));
         
-            //
-            // Create the offset table for the thumbnails in the page.
-            //
-            const headerBuffer = Buffer.alloc(headerSize);
-            const buffers = [ headerBuffer ]; // Initialize buffer array with header space.
-            let currentOffset = headerSize; // Start offset after the header.
+    //         //
+    //         // Create the offset table for the thumbnails in the page.
+    //         //
+    //         const headerBuffer = Buffer.alloc(headerSize);
+    //         const buffers = [ headerBuffer ]; // Initialize buffer array with header space.
+    //         let currentOffset = headerSize; // Start offset after the header.
             
-            // For debugging:
-            //const images: any[] = [];
+    //         // For debugging:
+    //         //const images: any[] = [];
 
-            let thumbIndex = 0;
+    //         let thumbIndex = 0;
 
-            for (; thumbIndex < thumbBuffers.length; thumbIndex++) {
-                const thumbBuffer = thumbBuffers[thumbIndex];
-                buffers.push(thumbBuffer);
+    //         for (; thumbIndex < thumbBuffers.length; thumbIndex++) {
+    //             const thumbBuffer = thumbBuffers[thumbIndex];
+    //             buffers.push(thumbBuffer);
 
-                // For debugging:
-                // images.push({
-                //     offset: currentOffset,
-                //     size: thumbBuffer.length,
-                // });
+    //             // For debugging:
+    //             // images.push({
+    //             //     offset: currentOffset,
+    //             //     size: thumbBuffer.length,
+    //             // });
                 
-                // Write the current offset to the header (position in the header buffer).
-                headerBuffer.writeUInt32LE(currentOffset, thumbIndex * offsetEntrySize);
-                currentOffset += thumbBuffer.length; // Move current offset forward.
-            }   
+    //             // Write the current offset to the header (position in the header buffer).
+    //             headerBuffer.writeUInt32LE(currentOffset, thumbIndex * offsetEntrySize);
+    //             currentOffset += thumbBuffer.length; // Move current offset forward.
+    //         }   
 
-            for (; thumbIndex < THUMBS_PER_PAGE; thumbIndex++) {
-                // For missing images, write 0 (or you could leave it as it's already zeroed)
-                buffers[0].writeUInt32LE(0, thumbIndex * offsetEntrySize);
-            }          
+    //         for (; thumbIndex < THUMBS_PER_PAGE; thumbIndex++) {
+    //             // For missing images, write 0 (or you could leave it as it's already zeroed)
+    //             buffers[0].writeUInt32LE(0, thumbIndex * offsetEntrySize);
+    //         }          
 
-            // For debugging:
-            // console.log(`Page index ${pageIndex} has ${thumbBuffers.length} thumbs.`);
-            // console.log(images);
+    //         // For debugging:
+    //         // console.log(`Page index ${pageIndex} has ${thumbBuffers.length} thumbs.`);
+    //         // console.log(images);
 
-            //
-            // Concatenate the offset table and thumbnail buffers to form the page.
-            //
-            const thumbPage = Buffer.concat(buffers);
+    //         //
+    //         // Concatenate the offset table and thumbnail buffers to form the page.
+    //         //
+    //         const thumbPage = Buffer.concat(buffers);
 
-            // For debugging:
-            // console.log(thumbPage.slice(0, 100).toString("hex"));
+    //         // For debugging:
+    //         // console.log(thumbPage.slice(0, 100).toString("hex"));
 
-            return [
-                thumbPage,
-                result.continuation,
-            ];
-        }
-        else {
-            console.log(`Skipping page ${pageIndex}`);
+    //         return [
+    //             thumbPage,
+    //             result.continuation,
+    //         ];
+    //     }
+    //     else {
+    //         console.log(`Skipping page ${pageIndex}`);
 
-            return [
-                undefined,
-                result.continuation,
-            ];
-        }
+    //         return [
+    //             undefined,
+    //             result.continuation,
+    //         ];
+    //     }
 
-    }
+    // }
 
-    //
-    // Load all thumbnails into pages.
-    //
-    async function preloadThumbPages(): Promise<void> {
-        console.log("Preloading thumbs...");
+    // //
+    // // Load all thumbnails into pages.
+    // //
+    // async function preloadThumbPages(): Promise<void> {
+    //     console.log("Preloading thumbs...");
 
-        let next: string | undefined = undefined;
-        let pageIndex = 0;
+    //     let next: string | undefined = undefined;
+    //     let pageIndex = 0;
 
-        do {
-            //
-            // If the page already exists in storage, just load it into the cache from there.
-            //
-            // const cachedPage = await storage.read(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString());
-            // if (cachedPage) {
-            //     thumbPages.push(cachedPage);
-            //     pageIndex++;
+    //     do {
+    //         //
+    //         // If the page already exists in storage, just load it into the cache from there.
+    //         //
+    //         // const cachedPage = await storage.read(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString());
+    //         // if (cachedPage) {
+    //         //     thumbPages.push(cachedPage);
+    //         //     pageIndex++;
 
-            //     //
-            //     // Still need to read storage to skip the next page!
-            //     //
-            //     const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
-            //     next = result.continuation;
+    //         //     //
+    //         //     // Still need to read storage to skip the next page!
+    //         //     //
+    //         //     const result = await storage.list("thumb", THUMBS_PER_PAGE, next);
+    //         //     next = result.continuation;
 
-            //     console.log(`Loaded thumb page ${pageIndex} from storage.`);
-            //     continue;
-            // }
+    //         //     console.log(`Loaded thumb page ${pageIndex} from storage.`);
+    //         //     continue;
+    //         // }
 
-            //
-            // Generate the next page of thumbnails.
-            //
-            const result = await loadThumbsPage(pageIndex, next);
-            if (result === undefined) {
-                // No more assets.
-                break;
-            }
+    //         //
+    //         // Generate the next page of thumbnails.
+    //         //
+    //         const result = await loadThumbsPage(pageIndex, next);
+    //         if (result === undefined) {
+    //             // No more assets.
+    //             break;
+    //         }
 
-            const [ thumbPage, continuation ] = result;
+    //         const [ thumbPage, continuation ] = result;
 
-            if (thumbPage !== undefined) {
-                //
-                // Write the thumb to storage.
-                //
-                await storage.write(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString(), "application/octet-stream", thumbPage);
+    //         if (thumbPage !== undefined) {
+    //             //
+    //             // Write the thumb to storage.
+    //             //
+    //             await storage.write(`thumb-pages-${THUMBS_PER_PAGE}`, pageIndex.toString(), "application/octet-stream", thumbPage);
                 
-                //
-                // Cache the page.
-                //
-                thumbPages.push(thumbPage);
-            }
+    //             //
+    //             // Cache the page.
+    //             //
+    //             thumbPages.push(thumbPage);
+    //         }
 
-            next = continuation;
-            pageIndex++;
+    //         next = continuation;
+    //         pageIndex++;
 
-            console.log(`Loaded ${thumbPages.length} thumb pages.`);
+    //         console.log(`Loaded ${thumbPages.length} thumb pages.`);
 
-        } while (next);
+    //     } while (next);
 
         
-        console.log(`Finished preloading ${thumbPages.length} thumb pages.`);
-    }
+    //     console.log(`Finished preloading ${thumbPages.length} thumb pages.`);
+    // }
 
-    preloadThumbPages()
-        .catch(err => {
-            console.error("Failed to preload thumbs.");
-            console.error(err);
-        });
+    // preloadThumbPages()
+    //     .catch(err => {
+    //         console.error("Failed to preload thumbs.");
+    //         console.error(err);
+    //     });
 
     //
     // Retreives a page containing many thumbnails.
