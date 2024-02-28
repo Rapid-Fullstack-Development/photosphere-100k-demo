@@ -3,7 +3,7 @@ import { loadImageAsDataURL, loadImageAsObjectURL, unloadObjectURL } from "../li
 import { useApi } from "./api-context";
 import axios from "axios";
 
-const THUMBS_PER_PAGE = 100;
+export const THUMBS_PER_PAGE = 100;
 
 export interface IPageCacheContext {
     //
@@ -122,7 +122,7 @@ export function PageCacheContextProvider({ children }: IProps) {
         const assetIndexInPage = globalAssetIndex % THUMBS_PER_PAGE;
 
         //
-        // Load the offset of the thubnail buffer form the offsets table at the start of the buffer.
+        // Load the offset of the thumbnail buffer form the offsets table at the start of the buffer.
         //
         const dataView = new DataView(cachedPage.buffer); //todo: Is it expensive to create this? Should it also be cached?
         const offsetEntrySize = 4; // Size of the offset entry in bytes (UInt32)

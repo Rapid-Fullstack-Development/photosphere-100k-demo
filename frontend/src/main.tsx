@@ -10,6 +10,7 @@ import { useUpload } from "./context/upload-context";
 import { AboutPage } from "./pages/about";
 const FPSStats = require("react-fps-stats").default;
 import classnames from "classnames";
+import { TestPage } from "./pages/test";
 
 //
 // The main page of the Photosphere app.
@@ -277,6 +278,11 @@ export function Main() {
                         <Route 
                             path="/about" 
                             element={<AboutPage />} 
+                            />
+
+                        <Route 
+                            path="/test" 
+                            element={<TestPage />} 
                             />
 
                         <Route
