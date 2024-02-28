@@ -5,6 +5,13 @@ import { usePageCache } from "./page-cache";
 
 export type ImageLoadedFn = (dataUrl: string) => void;
 
+//
+// Enable/disable paged loading of thumbnails.
+// Paged is optimized and faster.
+// Unpaged is slower but very reliable.
+//
+const paged = false;
+
 export interface IImageQueueContext {
 
     //
@@ -54,6 +61,11 @@ export interface IProps {
 }
 
 export function ImageQueueContextProvider({ children }: IProps) {
+
+    //
+    // Interface to the API.
+    //
+    const api = useApi();
 
     //
     // Interface to the page cache.
@@ -150,21 +162,26 @@ export function ImageQueueContextProvider({ children }: IProps) {
         }
 
         // console.log(`$$ Loading image: ${entry.assetGlobalIndex}`);
-
+        
         const timeStart = performance.now();
 
-        //
-        // Load the image from a page.
-        //
-        const [imageBuffer, contentType] = await loadImageFromPage(entry.assetGlobalIndex);
-        const objectURL = await loadObjectURLFromBuffer(imageBuffer, contentType);
+        let objectURL: string;
         
-        //
-        // Load the image from a URL.
-        //
-        // const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
-        // const objectURL = await loadImageAsObjectURL(imageUrl);
-
+        if (paged) {
+	        //
+	        // Load the image from a page.
+	        //
+	        const [imageBuffer, contentType] = await loadImageFromPage(entry.assetGlobalIndex);
+	        objectURL = await loadObjectURLFromBuffer(imageBuffer, contentType);
+        }
+        else {
+	        //
+	        // Load the image.
+	        //
+	        const imageUrl = api.makeUrl(`/thumb?id=${entry.assetId}`);
+	        objectURL = await loadImageAsObjectURL(imageUrl);
+	    }
+	    
         const timeElapsed = performance.now() - timeStart;
         loadTime.current.set(entry.assetGlobalIndex, timeElapsed);
         cachedEntry.objectURL = objectURL;
@@ -213,7 +230,9 @@ export function ImageQueueContextProvider({ children }: IProps) {
                 if (cacheEntry.numRefs <= 0) {
                     imageCache.current.delete(assetGlobalIndex);
                     unloadObjectURL(cacheEntry.objectURL!);
-                    unloadImageFromPage(assetGlobalIndex);
+                    if (paged) {
+                        unloadImageFromPage(assetGlobalIndex);
+                    }
                 }
             }
         }
