@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { IStorage } from "./services/storage";
 import { generateReverseChronoName } from "./lib/gen-name";
 import "./lib/populate-test-assets";
-import { countAssets, downloadHighResAssets, exportUploadTestAssets, processTestAssets } from "./lib/populate-test-assets";
+import { countAssets, downloadHighResAssets, exportUploadTestAssets, fixMissingAsset, processTestAssets } from "./lib/populate-test-assets";
 
 const API_KEY = process.env.API_KEY;
 
@@ -767,6 +767,12 @@ export async function createServer(now: () => Date, storage: IStorage) {
     //     });
 
     // downloadHighResAssets(storage)
+    //     .catch(err => {
+    //         console.error("Failed to download high res assets.");
+    //         console.error(err);
+    //     });
+
+    // fixMissingAsset(storage)
     //     .catch(err => {
     //         console.error("Failed to download high res assets.");
     //         console.error(err);

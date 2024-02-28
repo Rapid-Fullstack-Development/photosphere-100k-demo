@@ -1,3 +1,4 @@
+
 //
 // This module populates the database with test assets from unsplash for testing.
 //
@@ -343,4 +344,22 @@ export async function downloadHighResAssets(storage: IStorage): Promise<void> {
     }
 
     console.log(`Done.`);
+}
+
+//
+// Downloads the missing thumbnail for an asset.
+//
+export async function fixMissingAsset(storage: IStorage): Promise<void> {
+    const assetId = "00000000031139951092-3105315";
+    // if (await storage.exists("thumb", assetId)) {
+    //     console.log(`Already downloaded ${assetId}`);
+    //     return;
+    // }
+
+    const data = await storage.read("metadata", assetId);
+    const asset = JSON.parse(data!.toString("utf-8")) as IAsset;
+    const thumbnailUrl = asset.properties.fullData.src.medium;
+    await storage.writeStream("thumb", assetId, "image/jpg", await streamUrl(thumbnailUrl));
+
+    console.log(`Downloaded ${assetId}`);
 }
