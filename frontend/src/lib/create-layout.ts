@@ -3,6 +3,7 @@
 // Creates a row-based layout for the photo gallery.
 //
 
+import dayjs from "dayjs";
 import { IGalleryItem, IGalleryRow } from "./gallery-item";
 
 export interface IGalleryLayout {
@@ -17,6 +18,22 @@ export interface IGalleryLayout {
     galleryHeight: number;
 }
 
+//
+// Returns true if two sets of hedadings match.
+//
+function headingsMatch(headingsA: string[], headingsB: string[]): boolean {
+    if (headingsA.length !== headingsB.length) {
+        return false;
+    }
+
+    for (let i = 0; i < headingsA.length; i++) {
+        if (headingsA[i] !== headingsB[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 //
 // Creates or updates a row-based layout for items in the gallery.
@@ -50,6 +67,7 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
             offsetY: 0,
             height: targetRowHeight,
             width: 0,
+            headings: [],
         };
     
         rows.push(curRow);
@@ -74,6 +92,15 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
         const aspectRatio = item.width / item.height;
         const computedWidth = targetRowHeight * aspectRatio;
 
+        // 
+        // Compute headings for the item.
+        // TODO: This should be customizable. Heading could also be location (country, city, suburb, etc) or something else.
+        //
+        const itemHeadings = [
+            dayjs(item.sortDate).format("MMMM"),
+            dayjs(item.sortDate).format("YYYY"),
+        ];
+
         if (curRow.items.length > 0) {
             if (curRow.width + computedWidth > galleryWidth) {
                 //
@@ -86,13 +113,13 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
                     offsetY: 0,
                     height: targetRowHeight,
                     width: 0,
-                    group: item.group,
+                    headings: itemHeadings,
                 };
                 rows.push(curRow);
             }
-            else if (curRow.group !== item.group) {
+            else if (!headingsMatch(curRow.headings, itemHeadings)) {
                 //
-                // Break row on group.
+                // Break row on headings.
                 //
                 prevRow = curRow;
                 curRow = { //TODO: This should be optional.
@@ -101,13 +128,13 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
                     offsetY: 0,
                     height: targetRowHeight,
                     width: 0,
-                    group: item.group,
+                    headings: itemHeadings,
                 };
                 rows.push(curRow);
             }
         }
         else {
-            curRow.group = item.group;
+            curRow.headings = itemHeadings;
         }
 
         //
@@ -130,8 +157,7 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
     for (let rowIndex = startingRowIndex; rowIndex < rows.length-1; rowIndex++) {
         const row = rows[rowIndex];
         const nextRow = rows[rowIndex+1];
-        if (row.group !== nextRow.group) {
-            //TODO: This should be optional.
+        if (!headingsMatch(row.headings, nextRow.headings)) {
             continue; // Don't expand the last row in each group.
         }
 
@@ -160,8 +186,7 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
     for (let rowIndex = startingRowIndex; rowIndex < rows.length-1; rowIndex++) {
         const row = rows[rowIndex];
         const nextRow = rows[rowIndex+1];
-        if (row.group !== nextRow.group) {
-            //TODO: This should be optional.
+        if (!headingsMatch(row.headings, nextRow.headings)) {
             continue; // Don't expand the last row in each group.
         }
 
@@ -195,12 +220,11 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
     //
     // Add group headings.
     //
-    let prevGroup: string | undefined = undefined;
+    let prevHeadings: string[] = [];
 
     for (let rowIndex = startingRowIndex; rowIndex < rows.length; rowIndex++) {
         const row = rows[rowIndex];
-
-        if (row.group !== prevGroup) {
+        if (!headingsMatch(row.headings, prevHeadings)) {
             rows.splice(rowIndex, 0, {
                 type: "heading",
                 startingAssetDisplayIndex: row.startingAssetDisplayIndex,
@@ -208,12 +232,12 @@ export function computePartialLayout(layout: IGalleryLayout | undefined, items: 
                 offsetY: 0,
                 height: 45,
                 width: 0, // This isn't needed.
-                group: row.group,            
+                headings: row.headings,
             });
             rowIndex += 1;
         }
-
-        prevGroup = row.group;
+        
+        prevHeadings = row.headings;
     }
 
     //

@@ -3,15 +3,14 @@ import { IGalleryItem, ISelectedGalleryItem } from "../lib/gallery-item";
 import { useApi } from "./api-context";
 import flexsearch from "flexsearch";
 import { sleep } from "../lib/sleep";
-import dayjs from "dayjs";
 
 export interface IGalleryContext {
 
     //
-    // Set to true when the first page has loaded.
-    // Used to triger a rerender to display the first page.
+    // The number of assets loaded.
+    // Used to trigger rerender.
     //
-    firstPageLoaded: boolean;
+    numAssetsLoaded: number;
 
     //
     // Loads all assets into memory.
@@ -128,10 +127,10 @@ export function GalleryContextProvider({ children }: IProps) {
     const searchIndexRef = useRef<flexsearch.Document<IGalleryItem, true> | undefined>(undefined);
 
     //
-    // Set to true when the first page of assets has loaded.
-    // Triggers a rerender to show the first page of the gallery.
+    // The number of assets loaded.
+    // Used to trigger rerender.
     //
-    const [firstPageLoaded, setFirstPageLoaded] = useState(false);
+    const [numAssetsLoaded, setNumAssetsLoaded] = useState(0);
 
     //
     // Load all assets into memory.
@@ -149,8 +148,6 @@ export function GalleryContextProvider({ children }: IProps) {
 
         let continuation: string | undefined = undefined;
         let loadedAssets: IGalleryItem[] = [];
-
-        let firstPageLoaded = false;
 
         // let maxPages = 1; // Limit the number of pages to load for testing.
 
@@ -175,11 +172,6 @@ export function GalleryContextProvider({ children }: IProps) {
                 searchIndex.add(assetGlobalIndex, asset);
 
                 //
-                // Parse date and make group.
-                //
-                asset.group = dayjs(asset.sortDate).format("MMM, YYYY");
-
-                //
                 // Record the global index.
                 //
                 asset.globalIndex = assetGlobalIndex;
@@ -189,13 +181,10 @@ export function GalleryContextProvider({ children }: IProps) {
 
             // console.log(`== Added page ${pageIndex} of ${newAssets.length} assets.`);
 
-            // 
-            // Trigger rerender to display the first page of assets.
             //
-            if (!firstPageLoaded) {
-                firstPageLoaded = true;
-                setFirstPageLoaded(true);
-            }
+            // Trigger rerender as assets are loaded.
+            //
+            setNumAssetsLoaded(loadedAssets.length);
 
             if (assetsResult.next === undefined) {
                 // Done.
@@ -419,7 +408,7 @@ export function GalleryContextProvider({ children }: IProps) {
     }
 
     const value: IGalleryContext = {
-        firstPageLoaded,
+        numAssetsLoaded,
         loadAssets,
         enumerateAssets,
         assets: loadedAssetsRef.current,

@@ -59,11 +59,6 @@ export interface IGalleryItem {
     aspectRatio?: number;
 
     //
-    // The group that this item is a part of, if any.
-    //
-    group?: string;
-
-    //
     // The original name of the asset before it was uploaded.
     //
     origFileName: string;
@@ -128,7 +123,7 @@ export interface IGalleryRow {
     // The type of this row.
     //
     type?: "heading";
-
+    
     //
     // The index in the gallery of the first asset in this row.
     //
@@ -155,10 +150,9 @@ export interface IGalleryRow {
     height: number;
 
     //
-    // The group displayed in this row of items, if any.
+    // The headings displayed for this row of items.
     //
-    group?: string;
-
+    headings: string[];
 }
 
 //

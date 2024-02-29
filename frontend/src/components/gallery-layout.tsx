@@ -12,13 +12,22 @@ import { usePageCache } from "../context/page-cache";
 export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
 
 //
+// Width of the custom scrollbar on the right of the gallery.
+//
+export const SCROLLBAR_WIDTH = 50;
+
+//
 // Renders a row of items in the gallery.
 //
 function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemClick: ItemClickFn | undefined) {
     if (row.type === "heading") {
+        //
+        // Renders a heading row.
+        //
+        const heading = row.headings.join(" ");
         return (
             <div 
-                key={row.group}
+                key={heading}
                 style={{
                     fontSize: "0.9rem",
                     color: "rgb(60,64,67)",
@@ -31,11 +40,14 @@ function renderRow(api: IApiContext, row: IGalleryRow, rowIndex: number, onItemC
                     height: `${row.height}px`,
                 }}
                 >
-                {row.group}
+                {heading}
             </div>
         );
     }
 
+    //
+    // Renders a row of gallery items.
+    //
     return (
         <div
             key={rowIndex}
@@ -128,9 +140,9 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const { searchText, firstPageLoaded } = useGallery();
+    const { searchText } = useGallery();
     const { galleryLayout, galleryWidth, targetRowHeight, buildLayout } = useLayout();
-    const [scrollTop, setScrollTop] = useState(0);
+    const [ scrollTop, setScrollTop ] = useState(0);
     const { numChangedImages, clearQueue, queueHighPriorityImage, queueLowPriorityImage, loadImages } = useImageQueue();
     const { numCachedPages } = usePageCache();
     
@@ -140,16 +152,14 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
     useEffect(() => {
 
         const timeout = setTimeout(() => {
-            console.log("Rebuilding layout");
-            buildLayout(); // Debounced.
-        }, 100);
+            buildLayout(); // Debounced layout rebuild.
+        }, 250);
 
         return () => {
             clearTimeout(timeout);
         };
 
-
-    }, [firstPageLoaded, searchText, galleryWidth, targetRowHeight]);
+    }, [searchText, galleryWidth, targetRowHeight]);
 
     //
     // Handles scrolling.
@@ -241,6 +251,62 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
         return renderedRows;
     }
 
+    const gutter = 20;
+    const scrollbarHeight = (containerRef.current?.clientHeight||0) - (gutter*2);
+    const thumbPos = gutter + (scrollTop/(galleryLayout?.galleryHeight||0))*scrollbarHeight;
+
+    //
+    // Renders the main gallery headings into the custom scroll bar.
+    //
+    function renderScrollbarRows(galleryLayout: IGalleryLayout | undefined) {
+        if (!galleryLayout) {
+            return null;
+        }
+
+        let previousHeading = "";
+        const headingRows: IGalleryRow[] = [];
+        
+        for (const row of galleryLayout.rows) {
+            if (row.type === "heading") { // Filter out rows that are not group headings.
+                const topLevelHeading = row.headings[row.headings.length-1]; // Only care about top level headings.
+                if (previousHeading !== topLevelHeading) { 
+                    headingRows.push(row);
+                    previousHeading = topLevelHeading;
+                }
+            }
+        }
+       
+        return headingRows.map((row, index) => {
+            const topLevelHeading = row.headings[row.headings.length-1]; // Only care about top level headings.
+            const headingOffsetY = gutter + (row.offsetY/galleryLayout.galleryHeight)*scrollbarHeight; // Maps the scroll position into the scrollbar.
+            return (
+                <div
+                    key={index}
+                    className="cursor-pointer"
+                    style={{
+                        position: "absolute",
+                        top: `${headingOffsetY-14}px`,
+                        left: "0",
+                        width: "100%",
+                        height: "28px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        color: "rgb(60,64,67)",
+                        fontWeight: 600,
+                        fontSize: "0.9rem",
+                    }}
+                    onClick={() => {
+                        containerRef.current!.scrollTo({ top: row.offsetY, behavior: "instant" });
+                    }}
+                    >
+                    {topLevelHeading}
+                </div>
+            );
+        });
+    }
+
     return (
         <div
             className="gallery-scroller"
@@ -266,9 +332,9 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
             <div
                 style={{
                     position: "fixed",
-                    bottom: "60px",
-                    right: "30px",
-                    width: "200px",
+                    bottom: "10px",
+                    left: "15px",
+                    width: "240px",
                     height: "140px",
                     color: "black",
                     backgroundColor: "white",
@@ -291,6 +357,29 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                 <p>
                     Cached pages: {numCachedPages()}
                 </p>
+            </div>
+
+            {/* Custom scrollbar */}
+            <div
+                className="gallery-scrollbar"
+                style={{
+                    width: `${SCROLLBAR_WIDTH}px`,
+                }}
+                >
+                {renderScrollbarRows(galleryLayout)}
+
+                {/* The thumb */}
+                <div
+                    className="gallery-scrollbar-thumb"
+                    style={{
+                        position: "absolute",
+                        top: `${thumbPos-4}px`,
+                        width: "100%",
+                        height: "8px",
+                        borderTop: "3px solid rgba(94, 95, 97, 0.35)",
+                        borderBottom: "3px solid rgba(94, 95, 97, 0.35)",
+                    }}
+                    />
             </div>
         </div>
     );

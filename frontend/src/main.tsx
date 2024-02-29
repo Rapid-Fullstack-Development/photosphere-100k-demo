@@ -323,8 +323,8 @@ export function Main() {
             <FPSStats 
                 top="auto"
                 left="auto"
-                right={30}
-                bottom={5}
+                right={90}
+                bottom={10}
                 />
 
         </>

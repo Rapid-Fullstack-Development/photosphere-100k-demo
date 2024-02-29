@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { ISelectedGalleryItem } from "../lib/gallery-item";
-import { GalleryLayout } from "./gallery-layout";
+import { GalleryLayout, SCROLLBAR_WIDTH } from "./gallery-layout";
 import useResizeObserver from "@react-hook/resize-observer";
 import { LayoutContextProvider } from "../context/layout-context";
 
@@ -41,7 +41,7 @@ export function Gallery({ targetRowHeight, onItemClick }: IGalleryProps) {
     // Updates the gallery width when the container is resized.
     //
     useResizeObserver(containerRef, () => {
-        setGalleryWidth(containerRef.current!.clientWidth - GUTTER);
+        setGalleryWidth(containerRef.current!.clientWidth - GUTTER - SCROLLBAR_WIDTH);
     });
 
     return (

@@ -7,10 +7,10 @@ import { debug } from "console";
 export interface ILayoutContext {
 
     //
-    // Set to true when the first page has loaded.
-    // Used to triger a rerender to display the first page.
+    // The number of rows that have been computed.
+    // Used to trigger rerender.
     //
-    firstPageLoaded: boolean;
+    numRowsComputed: number;
 
     //
     // Builds the gallery layout.
@@ -67,10 +67,10 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
     const buildingLayoutRef = useRef<boolean>(false);
 
     //
-    // Set to true when the first page of assets has loaded.
-    // Triggers a rerender to show the first page of the gallery.
+    // The number of rows that have been computed.
+    // Used to trigger rerender.
     //
-    const [firstPageLoaded, setFirstPageLoaded] = useState(0);
+    const [ numRowsComputed, setNumRowsComputed ] = useState<number>(0);
 
     //
     // Builds the gallery layout.
@@ -79,7 +79,7 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
 
         if (buildingLayoutRef.current) {
             // Don't start another layout build if one is already in progress.
-            console.log(`>> Layout build already in progress.`);
+            // console.log(`>> Layout build already in progress.`);
             return;
         }
 
@@ -96,8 +96,6 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
         try {
             layoutRef.current = undefined; // Starting a new layout.
             
-            let firstPageLoaded = false;
-
             for await (const batch of enumerateAssets()) {
                 //
                 // Layout the first page.
@@ -107,15 +105,9 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
                 // 
                 // Trigger rerender to show the first page.
                 //
-                if (!firstPageLoaded) {
-                    firstPageLoaded = true;
-                    setFirstPageLoaded(prev => prev + 1);
-
-                    //
-                    // Sleep for a moment to allow the rerender before finshing the layout.
-                    //
-                    await sleep(10);
-                }
+                setNumRowsComputed(layoutRef.current.rows.length);
+                
+                await sleep(1); // Stagger layout to allow partial render.
             }
         }
         finally {
@@ -126,7 +118,7 @@ export function LayoutContextProvider({ children, galleryWidth, targetRowHeight 
     }
 
     const value: ILayoutContext = {
-        firstPageLoaded,
+        numRowsComputed,
         buildLayout,
         galleryLayout: layoutRef.current,
         galleryWidth,

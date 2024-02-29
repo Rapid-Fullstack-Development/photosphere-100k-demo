@@ -148,6 +148,16 @@ i {
     display: none; /* Chrome, Safari, Opera */
 }
 
+/* Gallery scrollbar */
+
+.gallery-scrollbar {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    height: 100%;
+    border-left: 1px solid rgba(94, 95, 97, 0.541);
+}
+
 /* Drag and drop */
 
 #upload-drop-area {
