@@ -243,9 +243,9 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
     return (
         <div
+            className="gallery-scroller"
             ref={containerRef}
             style={{
-                overflowY: "auto",
                 overflowX: "hidden",
                 height: "100%",
                 position: "relative",
