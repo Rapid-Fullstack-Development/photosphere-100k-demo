@@ -10,7 +10,7 @@ export type ImageLoadedFn = (dataUrl: string) => void;
 // Paged is optimized and faster.
 // Unpaged is slower but very reliable.
 //
-const paged = false;
+const paged = true;
 
 export interface IImageQueueContext {
 
