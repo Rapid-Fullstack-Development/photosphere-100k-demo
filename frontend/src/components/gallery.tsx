@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
 import { ISelectedGalleryItem } from "../lib/gallery-item";
-import { GalleryLayout, SCROLLBAR_WIDTH } from "./gallery-layout";
+import { GalleryLayout } from "./gallery-layout";
 import useResizeObserver from "@react-hook/resize-observer";
 import { LayoutContextProvider } from "../context/layout-context";
+import { SCROLLBAR_WIDTH } from "./gallery-scroller";
 
 //
 // Adds a small gutter on the right hand side of the gallery for some whitespace.

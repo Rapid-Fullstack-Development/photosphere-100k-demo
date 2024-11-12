@@ -21,7 +21,7 @@ body {
 
 #main {
     width: 100vw;
-    height: calc(100vh - 51px);
+    height: calc(100vh - 52px);
     overflow: hidden;
 }
 
@@ -154,7 +154,7 @@ i {
     position: fixed;
     top: 52px;
     right: 0;
-    height: 100%;
+    height: calc(100vh - 52px);
     border-left: 1px solid rgba(94, 95, 97, 0.541);
 }
 

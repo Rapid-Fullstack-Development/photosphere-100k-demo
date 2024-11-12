@@ -8,13 +8,9 @@ import { useGallery } from "../context/gallery-context";
 import { throttle } from "lodash";
 import { useImageQueue } from "../context/image-queue-context";
 import { usePageCache } from "../context/page-cache";
+import { GalleryScroller } from "./gallery-scroller";
 
 export type ItemClickFn = ((item: ISelectedGalleryItem) => void);
-
-//
-// Width of the custom scrollbar on the right of the gallery.
-//
-export const SCROLLBAR_WIDTH = 50;
 
 //
 // Renders a row of items in the gallery.
@@ -251,62 +247,6 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
         return renderedRows;
     }
 
-    const gutter = 20;
-    const scrollbarHeight = (containerRef.current?.clientHeight||0) - (gutter*2);
-    const thumbPos = gutter + (scrollTop/(galleryLayout?.galleryHeight||0))*scrollbarHeight;
-
-    //
-    // Renders the main gallery headings into the custom scroll bar.
-    //
-    function renderScrollbarRows(galleryLayout: IGalleryLayout | undefined) {
-        if (!galleryLayout) {
-            return null;
-        }
-
-        let previousHeading = "";
-        const headingRows: IGalleryRow[] = [];
-        
-        for (const row of galleryLayout.rows) {
-            if (row.type === "heading") { // Filter out rows that are not group headings.
-                const topLevelHeading = row.headings[row.headings.length-1]; // Only care about top level headings.
-                if (previousHeading !== topLevelHeading) { 
-                    headingRows.push(row);
-                    previousHeading = topLevelHeading;
-                }
-            }
-        }
-       
-        return headingRows.map((row, index) => {
-            const topLevelHeading = row.headings[row.headings.length-1]; // Only care about top level headings.
-            const headingOffsetY = gutter + (row.offsetY/galleryLayout.galleryHeight)*scrollbarHeight; // Maps the scroll position into the scrollbar.
-            return (
-                <div
-                    key={index}
-                    className="cursor-pointer"
-                    style={{
-                        position: "absolute",
-                        top: `${headingOffsetY-14}px`,
-                        left: "0",
-                        width: "100%",
-                        height: "28px",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        textAlign: "center",
-                        color: "rgb(60,64,67)",
-                        fontWeight: 600,
-                        fontSize: "0.9rem",
-                    }}
-                    onClick={() => {
-                        containerRef.current!.scrollTo({ top: row.offsetY, behavior: "instant" });
-                    }}
-                    >
-                    {topLevelHeading}
-                </div>
-            );
-        });
-    }
-
     return (
         <div
             className="gallery-scroller"
@@ -346,41 +286,34 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     Debug panel
                 </p>
                 <p>
+                    Height: {galleryLayout?.galleryHeight.toFixed(2)}
+                </p>
+                <p>
                     Rows: {galleryLayout?.rows.length}
                 </p>
                 <p>
                     Photos: {galleryLayout?.rows.reduce((acc, row) => acc + row.items.length, 0)}
                 </p>
-                <p>
+                {/* <p>
                     Cached images: {numChangedImages()}
                 </p>
                 <p>
                     Cached pages: {numCachedPages()}
-                </p>
+                </p> */}
             </div>
 
-            {/* Custom scrollbar */}
-            <div
-                className="gallery-scrollbar"
-                style={{
-                    width: `${SCROLLBAR_WIDTH}px`,
-                }}
-                >
-                {renderScrollbarRows(galleryLayout)}
-
-                {/* The thumb */}
-                <div
-                    className="gallery-scrollbar-thumb"
-                    style={{
-                        position: "absolute",
-                        top: `${thumbPos-4}px`,
-                        width: "100%",
-                        height: "8px",
-                        borderTop: "3px solid rgba(94, 95, 97, 0.35)",
-                        borderBottom: "3px solid rgba(94, 95, 97, 0.35)",
+            {galleryLayout
+                && <GalleryScroller
+                    galleryLayout={galleryLayout}
+                    scrollTop={scrollTop}
+                    setScrollTop={setScrollTop}
+                    scrollTo={scrollPosition => {
+                        containerRef.current!.scrollTo({ top: scrollPosition, behavior: "instant" });
                     }}
+
                     />
-            </div>
+            }
+
         </div>
     );
 }
