@@ -7,7 +7,22 @@ import { IGalleryRow } from "../lib/gallery-item";
 //
 export const SCROLLBAR_WIDTH = 50;
 
+//
+// Gutter above and below the scrollbar.
+//
+const VERTICAL_GUTTER = 20;
+
+//
+// Minimum height of the scrollbar thumb.
+//
+const MIN_SCROLLTHUMB_HEIGHT = 24;
+
 export interface IGalleryScrollerProps {
+    //
+    // The height of the div that contains the gallery.
+    //
+    galleryContainerHeight: number;
+
     //
     // The layout of the gallery.
     //
@@ -32,44 +47,28 @@ export interface IGalleryScrollerProps {
 //
 // A custom scrollbar for the gallery.
 //
-export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGalleryScrollerProps) {
+export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollTop, setScrollTop, scrollTo }: IGalleryScrollerProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
     const [mouseY, setMouseY] = useState<number | undefined>(undefined);
     const [scrollbarHeight, setScrollbarHeight] = useState<number>(0);
     const [thumbPos, setThumbPos] = useState<number>(0);
-
-    const gutter = 20;
-    //fio:
-    // const scrollbarHeight = (containerRef.current?.clientHeight || 0) - (gutter * 2);
-    // console.log(`Height: ${containerRef.current?.clientHeight}`);
-    // console.log(`Height with gutter: ${scrollbarHeight}`);
-    // const thumbPos = gutter + (scrollTop / (galleryLayout?.galleryHeight || 0)) * scrollbarHeight;
-
+    const [isDragging, setIsDragging] = useState(false);
+    const deltaY = useRef(0);
+    
     useEffect(() => {
         if (containerRef.current) {
-            //todo: update on resize.
-            const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (gutter * 2);
+            const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (VERTICAL_GUTTER * 2);
             setScrollbarHeight(_scrollbarHeight);
-            setThumbPos(gutter + ((scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight));
-            console.log(`Height: ${containerRef.current?.clientHeight}`);
-            console.log(`Height with gutter: ${_scrollbarHeight}`);
+            setThumbPos(VERTICAL_GUTTER + ((scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight));
         }
-    }, []);
+    }, [scrollTop, galleryLayout]);
 
     useEffect(() => {
         function onMouseMove(event: MouseEvent) {
             const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
             setMouseY(event.clientY - scrollbarTop);
-            //fio:
-            // console.log(`onMouseMove:`);
-            // console.log(`clientY: `, event.clientY);
-            // console.log(`scrollbarTop: `, scrollbarTop);
-            // console.log(`Y relative to scrollbar top: `, event.clientY - scrollbarTop);
-            // console.log(`Y relative to gutter: `, event.clientY - scrollbarTop - gutter);
-            // console.log(`scrollbarHeight: `, scrollbarHeight);
-            // console.log(`Percentage: `, ((event.clientY - scrollbarTop - gutter) / scrollbarHeight) * 100); //todo: this only comes up to 95%!
         };
 
         window.addEventListener('mousemove', onMouseMove);
@@ -79,11 +78,70 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
         };
     }, []);
 
+    // Mouse support for desktop.
+    useEffect(() => {
+        if (isDragging) {
+            function onMouseMove(e: MouseEvent) {
+                setThumbPos(e.clientY - deltaY.current);
+                setScrollTop(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
+            }
+
+            function onMouseUp() {
+                setIsDragging(false);                
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+
+            return () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+        }
+    }, [isDragging, deltaY]);
+
+    // Touch support for mobile.
+    useEffect(() => {
+        if (isDragging) {
+            function onTouchMove(e: TouchEvent) {
+                setThumbPos(e.touches[0].clientY - deltaY.current);
+                setScrollTop(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
+            };
+
+            function onTouchEnd() {
+                setIsDragging(false);                
+            }
+
+            document.addEventListener('touchmove', onTouchMove);
+            document.addEventListener('touchend', onTouchEnd);
+
+            return () => {
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+            };
+        }
+    }, [isDragging, deltaY]);    
+
+    function onMouseDown(e: React.MouseEvent) {
+        deltaY.current = e.clientY - thumbPos;
+        setIsDragging(true);
+    };
+
+    function onTouchStart(e: React.TouchEvent) {
+        deltaY.current = e.touches[0].clientY - thumbPos;
+        setIsDragging(true);
+    };
+
+    // Scroll effect on the gallery div
+    useEffect(() => { //fio:
+        //todo::
+        // setScrollTop((thumbPos - VERTICAL_GUTTER) / scrollbarHeight * galleryLayout!.galleryHeight);
+    }, [thumbPos]);    
+
     //
     // Calculates the scroll position for a mouse Y position.
     //
     function calcScrollPos(mouseY: number): number {
-        //fio: const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
         const percentage = mouseY / scrollbarHeight;
         const scrollY = percentage * galleryLayout!.galleryHeight;
         return Number(Math.min(galleryLayout!.galleryHeight, Math.max(0, scrollY)).toFixed(2));
@@ -112,7 +170,7 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
 
         return headingRows.map((row, index) => {
             const topLevelHeading = row.headings[row.headings.length - 1]; // Only care about top level headings.
-            const headingOffsetY = gutter + (row.offsetY / galleryLayout.galleryHeight) * scrollbarHeight; // Maps the scroll position into the scrollbar.
+            const headingOffsetY = VERTICAL_GUTTER + (row.offsetY / galleryLayout.galleryHeight) * scrollbarHeight; // Maps the scroll position into the scrollbar.
             return (
                 <div
                     key={index}
@@ -120,7 +178,7 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
                         position: "absolute",
                         top: `${headingOffsetY - 0}px`,
                         left: "0",
-                        width: "100%",
+                        width: `calc(${SCROLLBAR_WIDTH}px - 4px)`,
                         height: "28px",
                         display: "flex",
                         justifyContent: "center",
@@ -144,17 +202,17 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
         <div
             ref={containerRef}
             className="gallery-scrollbar cursor-pointer"
+            onMouseDown={onMouseDown}
+            onTouchStart={onTouchStart}
             style={{
                 width: `${SCROLLBAR_WIDTH}px`,
-                border: "1px solid red",
             }}
             onClick={event => {
                 //
                 // Calculate the percentage of the scrollbar clicked and scroll the gallery to that position.
                 //
                 const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
-                const newScrollPos = calcScrollPos(event.clientY - scrollbarTop - gutter);
-                console.log(`newScrollPos: `, newScrollPos); //fio:
+                const newScrollPos = calcScrollPos(event.clientY - scrollbarTop - VERTICAL_GUTTER);
                 scrollTo(newScrollPos);
             }}
             >
@@ -165,11 +223,12 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
                 className="gallery-scrollbar-thumb"
                 style={{
                     position: "absolute",
-                    top: `${thumbPos - 4}px`,
-                    width: "100%",
-                    height: "4px",
-                    borderTop: "2px solid rgba(45, 85, 255, 0.6)",
-                    borderBottom: "2px solid rgba(45, 85, 255, 0.6)",
+                    top: `${thumbPos}px`,
+                    width: `calc(${SCROLLBAR_WIDTH}px - 4px)`,
+                    height: `${Math.max(MIN_SCROLLTHUMB_HEIGHT, (galleryContainerHeight / galleryLayout?.galleryHeight) * scrollbarHeight)}px`,
+                    border: "2px solid rgba(45, 85, 255, 1)",
+                    backgroundColor: "rgba(45, 85, 255, 0.2)",
+                    borderRadius: "1px",
                 }}
                 >
             </div>
@@ -184,6 +243,8 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
                     marginRight: `7px`,
                     padding: `3px`,
                     fontSize: `16px`,
+                    color: "white",
+                    backgroundColor: "black",                
                 }}
                 >
                 {scrollTop}
@@ -191,11 +252,10 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
 
             {/*
             Hover indicator
-            TODO: Only show this when the mouse is over the scrollbar.
-            TODO: Make sure it's relative without the magic number.
             */}
             {mouseY !== undefined &&
                 <div
+                    className="hover-indicator"
                     style={{
                         position: "absolute",
                         top: `${mouseY-1}px`,
@@ -209,11 +269,12 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
 
             {mouseY !== undefined &&
                 <div
+                    className="hover-indicator"
                     style={{
                         position: "absolute",
-                        top: `${mouseY - 100}px`,
+                        top: `${mouseY - 28}px`,
                         right: `100%`,
-                        width: "120px",
+                        width: "180px",
                         marginRight: `7px`,
                         padding: `3px`,
                         fontSize: `16px`,
@@ -221,7 +282,7 @@ export function GalleryScroller({ galleryLayout, scrollTop, scrollTo }: IGallery
                         backgroundColor: "black",
                     }}
                     >
-                    {calcScrollPos(mouseY - gutter)} / {calcScrollPos(scrollbarHeight)}
+                    {calcScrollPos(mouseY - VERTICAL_GUTTER)} / {calcScrollPos(scrollbarHeight)}
                     {/* {mouseY-gutter} / {scrollbarHeight} */}
                 </div>
             }

@@ -255,6 +255,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                 overflowX: "hidden",
                 height: "100%",
                 position: "relative",
+                userSelect: "none",
             }}
             >
             <div
@@ -304,6 +305,7 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
 
             {galleryLayout
                 && <GalleryScroller
+                    galleryContainerHeight={containerRef.current?.clientHeight || 0}
                     galleryLayout={galleryLayout}
                     scrollTop={scrollTop}
                     setScrollTop={setScrollTop}
