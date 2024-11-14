@@ -217,7 +217,21 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 scrollTo(newScrollPos);
             }}
             >
-            {/* {renderScrollbarRows(galleryLayout)} */}
+
+            {/* Pop out timeline. */}
+            {isDragging &&
+                <div
+                    style={{
+                        position: "absolute",
+                        right: "100%",
+                        width: "100px",
+                        height: "100%",
+                        backgroundColor: "rgba(255,255,255,0.9)",
+                    }}
+                    >
+                    {renderScrollbarRows(galleryLayout)}                
+                </div>
+            }
 
             {/* The thumb */}
             <div
