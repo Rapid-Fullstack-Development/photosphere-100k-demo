@@ -242,19 +242,38 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
 
             {/* Pop out timeline. */}
             {(isDraggingTouch || isDraggingMouse || hover) &&
-                <div
-                    style={{
-                        position: "absolute",
-                        right: "100%",
-                        width: "100px",
-                        height: "100%",
-                        backgroundColor: "rgba(255,255,255,0.9)",
-                    }}
-                    >
+                <>
+                    <div
+                        style={{
+                            position: "absolute",
+                            right: "100%",
+                            width: "100px",
+                            height: "100%",
+                            backgroundColor: "rgba(255,255,255,0.9)",
+                        }}
+                        >
+
+                        {/*
+                        Hover indicator
+                        */}
+                        <div
+                            className="hover-indicator"
+                            style={{
+                                position: "absolute",
+                                top: `${thumbPos-1}px`,
+                                left: "0",
+                                width: "100%",
+                                height: `${thumbHeight+2}px`,
+                            }}
+                            />
+
+                        {renderScrollbarRows(galleryLayout)}                
+                    </div>
 
                     {/*
                     Hover indicator
                     */}
+
                     <div
                         className="hover-indicator"
                         style={{
@@ -262,13 +281,12 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                             top: `${thumbPos-1}px`,
                             left: "0",
                             width: "100%",
-                            height: "2px",
+                            height: `${thumbHeight+2}px`,
                         }}
-                    />
-
-                    {renderScrollbarRows(galleryLayout)}                
-                </div>
+                        />
+                </>                
             }
+
 
             {/* The thumb */}
             <div
