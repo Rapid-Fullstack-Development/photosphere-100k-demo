@@ -54,9 +54,6 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     const [hover, setHover] = useState(false);
     const deltaY = useRef(0);
 
-    //
-    // Sets the height of the thumb within constraints.
-    //
     function updateThumbPos(thumbPos: number): void {
         setThumbPos(Math.min(Math.max(VERTICAL_GUTTER, thumbPos), scrollbarHeight - thumbHeight));
     }
@@ -81,37 +78,63 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
 
     }, [scrollTop, galleryLayout]);
 
+    // Mouse support for desktop.
     //
     // Updates the gallery width when the container is resized.
     //
     useResizeObserver(containerRef, () => {
         updateScrollbarHeight();
     });
-
-    // Supports mouse and touch.
     useEffect(() => {
         if (isDragging) {
-            function onPointerMove(e: MouseEvent) {
+            function onMouseMove(e: MouseEvent) {
                 updateThumbPos(e.clientY - deltaY.current);                
                 scrollTo(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
             }
 
-            function onPointerUp() {
+            function onMouseUp() {
                 setIsDragging(false);                
             }
 
-            document.addEventListener('pointermove', onPointerMove);
-            document.addEventListener('pointerup', onPointerUp);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
 
             return () => {
-                document.removeEventListener('pointermove', onPointerMove);
-                document.removeEventListener('pointerup', onPointerUp);
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
             };
         }
     }, [isDragging, deltaY]);
 
-    function onPointerDown(e: React.MouseEvent) {
+    // Touch support for mobile.
+    useEffect(() => {
+        if (isDragging) {
+            function onTouchMove(e: TouchEvent) {
+                updateThumbPos(e.touches[0].clientY - deltaY.current);
+                scrollTo(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
+            };
+
+            function onTouchEnd() {
+                setIsDragging(false);                
+            }
+
+            document.addEventListener('touchmove', onTouchMove);
+            document.addEventListener('touchend', onTouchEnd);
+
+            return () => {
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+            };
+        }
+    }, [isDragging, deltaY]);    
+
+    function onMouseDown(e: React.MouseEvent) {
         deltaY.current = e.clientY - thumbPos;
+        setIsDragging(true);
+    };
+
+    function onTouchStart(e: React.TouchEvent) {
+        deltaY.current = e.touches[0].clientY - thumbPos;
         setIsDragging(true);
     };
 
@@ -179,13 +202,13 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             style={{
                 width: `${SCROLLBAR_WIDTH}px`,
             }}
-            onPointerEnter={() => {
+            onMouseEnter={() => {
                 setHover(true);
             }}
-            onPointerLeave={() => {
+            onMouseLeave={() => {
                 setHover(false);
             }}
-            onPointerUp={event => {
+            onMouseUp={event => {
                 if (isDragging) {
                     return;
                 }
@@ -232,7 +255,8 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             {/* The thumb */}
             <div
                 className="gallery-scrollbar-thumb"
-                onPointerDown={onPointerDown}
+                onMouseDown={onMouseDown}
+                onTouchStart={onTouchStart}
                 style={{
                     position: "absolute",
                     top: `${thumbPos}px`,
