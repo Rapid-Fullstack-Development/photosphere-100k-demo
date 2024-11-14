@@ -167,11 +167,7 @@ i {
 }
 
 .hover-indicator {
-    visibility: hidden;
-}
-
-.gallery-scrollbar:hover .hover-indicator {
-    visibility: visible;
+    background-color: #d55959;   
 }
 
 /* Drag and drop */

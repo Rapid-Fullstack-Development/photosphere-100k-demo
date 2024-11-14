@@ -46,11 +46,11 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const [mouseY, setMouseY] = useState<number | undefined>(undefined);
     const [scrollbarHeight, setScrollbarHeight] = useState<number>(0);
     const [thumbPos, setThumbPos] = useState<number>(0);
     const [thumbHeight, setThumbHeight] = useState<number>(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [hover, setHover] = useState(false);
     const deltaY = useRef(0);
 
     function updateThumbPos(thumbPos: number): void {
@@ -65,23 +65,9 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         if (containerRef.current) {
             const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (VERTICAL_GUTTER * 2);
             setScrollbarHeight(_scrollbarHeight);
-            //fio: setThumbPos(VERTICAL_GUTTER + ((scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight));
             updateThumbPos(VERTICAL_GUTTER + (scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight);
         }
     }, [scrollTop, galleryLayout]);
-
-    useEffect(() => {
-        function onMouseMove(event: MouseEvent) {
-            const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
-            setMouseY(event.clientY - scrollbarTop);
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-
-        return () => {
-            window.removeEventListener('mousemove', onMouseMove);
-        };
-    }, []);
 
     // Mouse support for desktop.
     useEffect(() => {
@@ -187,9 +173,6 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                         fontWeight: 600,
                         fontSize: "0.9rem",
                     }}
-                    onClick={() => {
-                        scrollTo(row.offsetY); //todo: probably don't need this because we can click anywhere.
-                    }}
                     >
                     {topLevelHeading}
                 </div>
@@ -203,6 +186,12 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             className="gallery-scrollbar"
             style={{
                 width: `${SCROLLBAR_WIDTH}px`,
+            }}
+            onMouseEnter={() => {
+                setHover(true);
+            }}
+            onMouseLeave={() => {
+                setHover(false);
             }}
             onMouseUp={event => {
                 if (isDragging) {
@@ -219,7 +208,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             >
 
             {/* Pop out timeline. */}
-            {isDragging &&
+            {(isDragging || hover) &&
                 <div
                     style={{
                         position: "absolute",
@@ -229,6 +218,21 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                         backgroundColor: "rgba(255,255,255,0.9)",
                     }}
                     >
+
+                    {/*
+                    Hover indicator
+                    */}
+                    <div
+                        className="hover-indicator"
+                        style={{
+                            position: "absolute",
+                            top: `${thumbPos-1}px`,
+                            left: "0",
+                            width: "100%",
+                            height: "2px",
+                        }}
+                    />
+
                     {renderScrollbarRows(galleryLayout)}                
                 </div>
             }
@@ -245,60 +249,6 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 }}
                 >
             </div>
-
-            {/* The marker */}
-            {/* <div
-                className="gallery-scrollbar-marker"
-                style={{
-                    position: "absolute",
-                    top: `${thumbPos - 8 - 3}px`,
-                    right: `100%`,
-                    marginRight: `7px`,
-                    padding: `3px`,
-                    fontSize: `16px`,
-                    color: "white",
-                    backgroundColor: "black",                
-                }}
-                >
-                {scrollTop}
-            </div> */}
-
-            {/*
-            Hover indicator
-            */}
-            {/* {mouseY !== undefined &&
-                <div
-                    className="hover-indicator"
-                    style={{
-                        position: "absolute",
-                        top: `${mouseY-1}px`,
-                        left: "0",
-                        width: "100%",
-                        height: "2px",
-                        backgroundColor: "green",
-                    }}
-                />
-            }
-
-            {mouseY !== undefined &&
-                <div
-                    className="hover-indicator"
-                    style={{
-                        position: "absolute",
-                        top: `${mouseY - 28}px`,
-                        right: `100%`,
-                        width: "180px",
-                        marginRight: `7px`,
-                        padding: `3px`,
-                        fontSize: `16px`,
-                        color: "white",
-                        backgroundColor: "black",
-                    }}
-                    >
-                    {calcScrollPos(mouseY - VERTICAL_GUTTER)} / {calcScrollPos(scrollbarHeight)}
-                </div>
-            } */}
-
         </div>
     );
 }
