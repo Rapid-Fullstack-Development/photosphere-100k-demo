@@ -308,7 +308,6 @@ export function GalleryLayout({ onItemClick }: IGalleryLayoutProps) {
                     galleryContainerHeight={containerRef.current?.clientHeight || 0}
                     galleryLayout={galleryLayout}
                     scrollTop={scrollTop}
-                    setScrollTop={setScrollTop}
                     scrollTo={scrollPosition => {
                         containerRef.current!.scrollTo({ top: scrollPosition, behavior: "instant" });
                     }}

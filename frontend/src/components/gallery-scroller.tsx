@@ -93,7 +93,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         if (isDragging) {
             function onMouseMove(e: MouseEvent) {
                 updateThumbPos(e.clientY - deltaY.current);                
-                setScrollTop(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
+                scrollTo(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
             }
 
             function onMouseUp() {
@@ -115,7 +115,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         if (isDragging) {
             function onTouchMove(e: TouchEvent) {
                 updateThumbPos(e.touches[0].clientY - deltaY.current);
-                setScrollTop(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
+                scrollTo(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
             };
 
             function onTouchEnd() {
