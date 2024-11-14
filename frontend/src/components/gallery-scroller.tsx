@@ -5,7 +5,7 @@ import { IGalleryRow } from "../lib/gallery-item";
 //
 // Width of the custom scrollbar on the right of the gallery.
 //
-export const SCROLLBAR_WIDTH = 22;
+export const SCROLLBAR_WIDTH = 44;
 
 //
 // Gutter above and below the scrollbar.
