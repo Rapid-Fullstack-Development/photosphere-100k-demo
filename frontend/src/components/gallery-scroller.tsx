@@ -5,17 +5,17 @@ import { IGalleryRow } from "../lib/gallery-item";
 //
 // Width of the custom scrollbar on the right of the gallery.
 //
-export const SCROLLBAR_WIDTH = 50;
+export const SCROLLBAR_WIDTH = 22;
 
 //
 // Gutter above and below the scrollbar.
 //
-const VERTICAL_GUTTER = 20;
+const VERTICAL_GUTTER = 2;
 
 //
 // Minimum height of the scrollbar thumb.
 //
-const MIN_SCROLLTHUMB_HEIGHT = 24;
+const MIN_SCROLLTHUMB_HEIGHT = 42;
 
 export interface IGalleryScrollerProps {
     //
@@ -178,7 +178,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                         position: "absolute",
                         top: `${headingOffsetY - 0}px`,
                         left: "0",
-                        width: `calc(${SCROLLBAR_WIDTH}px - 4px)`,
+                        width: `100%`,
                         height: "28px",
                         display: "flex",
                         justifyContent: "center",
@@ -201,7 +201,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     return (
         <div
             ref={containerRef}
-            className="gallery-scrollbar cursor-pointer"
+            className="gallery-scrollbar"
             onMouseDown={onMouseDown}
             onTouchStart={onTouchStart}
             style={{
@@ -216,7 +216,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 scrollTo(newScrollPos);
             }}
             >
-            {renderScrollbarRows(galleryLayout)}
+            {/* {renderScrollbarRows(galleryLayout)} */}
 
             {/* The thumb */}
             <div
@@ -224,17 +224,13 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 style={{
                     position: "absolute",
                     top: `${thumbPos}px`,
-                    width: `calc(${SCROLLBAR_WIDTH}px - 4px)`,
                     height: `${Math.max(MIN_SCROLLTHUMB_HEIGHT, (galleryContainerHeight / galleryLayout?.galleryHeight) * scrollbarHeight)}px`,
-                    border: "2px solid rgba(45, 85, 255, 1)",
-                    backgroundColor: "rgba(45, 85, 255, 0.2)",
-                    borderRadius: "1px",
                 }}
                 >
             </div>
 
             {/* The marker */}
-            <div
+            {/* <div
                 className="gallery-scrollbar-marker"
                 style={{
                     position: "absolute",
@@ -248,12 +244,12 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 }}
                 >
                 {scrollTop}
-            </div>
+            </div> */}
 
             {/*
             Hover indicator
             */}
-            {mouseY !== undefined &&
+            {/* {mouseY !== undefined &&
                 <div
                     className="hover-indicator"
                     style={{
@@ -283,9 +279,8 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                     }}
                     >
                     {calcScrollPos(mouseY - VERTICAL_GUTTER)} / {calcScrollPos(scrollbarHeight)}
-                    {/* {mouseY-gutter} / {scrollbarHeight} */}
                 </div>
-            }
+            } */}
 
         </div>
     );

@@ -8,7 +8,7 @@ import { SCROLLBAR_WIDTH } from "./gallery-scroller";
 //
 // Adds a small gutter on the right hand side of the gallery for some whitespace.
 //
-const GUTTER = 8;
+const GUTTER = 4;
 
 export interface IGalleryProps { 
 
