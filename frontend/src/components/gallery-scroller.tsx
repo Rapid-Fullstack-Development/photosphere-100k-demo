@@ -210,52 +210,72 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="gallery-scrollbar"
-            style={{
-                width: `${SCROLLBAR_WIDTH}px`,
-            }}
-            onMouseEnter={() => {
-                if (!isTouchDevice) {
-                    setHover(true);
-                }
-            }}
-            onMouseLeave={() => {
-                if (!isTouchDevice) {
-                    setHover(false);
-                }
-            }}
-            onMouseUp={event => {
-                if (isDraggingTouch || isDraggingMouse) {
-                    return;
-                }
-                
-                //
-                // Calculate the percentage of the scrollbar clicked and scroll the gallery to that position.
-                //
-                const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
-                const newScrollPos = calcScrollPos(event.clientY - scrollbarTop - VERTICAL_GUTTER);
-                scrollTo(newScrollPos);
-            }}
-            >
+        <>
+            {/* Visible scrollbar */}
+            <div
+                ref={containerRef}
+                className="gallery-scrollbar"
+                style={{
+                    width: `${SCROLLBAR_WIDTH}px`,
+                }}
+                onMouseEnter={() => {
+                    if (!isTouchDevice) {
+                        setHover(true);
+                    }
+                }}
+                onMouseLeave={() => {
+                    if (!isTouchDevice) {
+                        setHover(false);
+                    }
+                }}
+                onMouseUp={event => {
+                    if (isDraggingTouch || isDraggingMouse) {
+                        return;
+                    }
+                    
+                    //
+                    // Calculate the percentage of the scrollbar clicked and scroll the gallery to that position.
+                    //
+                    const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
+                    const newScrollPos = calcScrollPos(event.clientY - scrollbarTop - VERTICAL_GUTTER);
+                    scrollTo(newScrollPos);
+                }}
+                >
 
-            {/* Pop out timeline. */}
-            {(isDraggingTouch || isDraggingMouse || hover) &&
-                <>
-                    <div
-                        style={{
-                            position: "absolute",
-                            right: "100%",
-                            width: "100px",
-                            height: "100%",
-                            backgroundColor: "rgba(255,255,255,0.9)",
-                        }}
-                        >
+                {/* Pop out timeline. */}
+                {(isDraggingTouch || isDraggingMouse || hover) &&
+                    <>
+                        <div
+                            style={{
+                                position: "absolute",
+                                right: "100%",
+                                width: "100px",
+                                height: "100%",
+                                backgroundColor: "rgba(255,255,255,0.9)",
+                            }}
+                            >
+
+                            {/*
+                            Hover indicator
+                            */}
+                            <div
+                                className="hover-indicator"
+                                style={{
+                                    position: "absolute",
+                                    top: `${thumbPos-1}px`,
+                                    left: "0",
+                                    width: "100%",
+                                    height: `${thumbHeight+2}px`,
+                                }}
+                                />
+
+                            {renderScrollbarRows(galleryLayout)}                
+                        </div>
 
                         {/*
                         Hover indicator
                         */}
+
                         <div
                             className="hover-indicator"
                             style={{
@@ -266,40 +286,120 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                                 height: `${thumbHeight+2}px`,
                             }}
                             />
+                    </>                
+                }
 
-                        {renderScrollbarRows(galleryLayout)}                
-                    </div>
 
-                    {/*
-                    Hover indicator
-                    */}
+                {/* The thumb */}
+                <div
+                    className="gallery-scrollbar-thumb"
+                    onMouseDown={onMouseDown}
+                    onTouchStart={onTouchStart}
+                    style={{
+                        position: "absolute",
+                        top: `${thumbPos}px`,
+                        height: `${thumbHeight}px`,
+                    }}
+                    >
+                </div>
+            </div>
 
+            {/* Invisible scrollbar for hittesting */  }
+            {isTouchDevice &&
+                <div
+                    className="gallery-scrollbar"
+                    style={{
+                        width: `${SCROLLBAR_WIDTH*2}px`,
+                        opacity: 0,
+                        pointerEvents: "auto",
+                    }}
+                    onMouseEnter={() => {
+                        if (!isTouchDevice) {
+                            setHover(true);
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        if (!isTouchDevice) {
+                            setHover(false);
+                        }
+                    }}
+                    onMouseUp={event => {
+                        if (isDraggingTouch || isDraggingMouse) {
+                            return;
+                        }
+                        
+                        //
+                        // Calculate the percentage of the scrollbar clicked and scroll the gallery to that position.
+                        //
+                        const scrollbarTop = containerRef.current!.getBoundingClientRect().top;
+                        const newScrollPos = calcScrollPos(event.clientY - scrollbarTop - VERTICAL_GUTTER);
+                        scrollTo(newScrollPos);
+                    }}
+                    >
+
+                    {/* Pop out timeline. */}
+                    {(isDraggingTouch || isDraggingMouse || hover) &&
+                        <>
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    right: "100%",
+                                    width: "100px",
+                                    height: "100%",
+                                    backgroundColor: "rgba(255,255,255,0.9)",
+                                }}
+                                >
+
+                                {/*
+                                Hover indicator
+                                */}
+                                <div
+                                    className="hover-indicator"
+                                    style={{
+                                        position: "absolute",
+                                        top: `${thumbPos-1}px`,
+                                        left: "0",
+                                        width: "100%",
+                                        height: `${thumbHeight+2}px`,
+                                    }}
+                                    />
+
+                                {renderScrollbarRows(galleryLayout)}                
+                            </div>
+
+                            {/*
+                            Hover indicator
+                            */}
+
+                            <div
+                                className="hover-indicator"
+                                style={{
+                                    position: "absolute",
+                                    top: `${thumbPos-1}px`,
+                                    left: "0",
+                                    width: "100%",
+                                    height: `${thumbHeight+2}px`,
+                                }}
+                                />
+                        </>                
+                    }
+
+
+                    {/* The thumb */}
                     <div
-                        className="hover-indicator"
+                        className="gallery-scrollbar-thumb"
+                        onMouseDown={onMouseDown}
+                        onTouchStart={onTouchStart}
                         style={{
                             position: "absolute",
-                            top: `${thumbPos-1}px`,
-                            left: "0",
+                            top: `${thumbPos}px`,
+                            height: `${thumbHeight}px`,
                             width: "100%",
-                            height: `${thumbHeight+2}px`,
                         }}
-                        />
-                </>                
+                        >
+                    </div>
+                </div>
             }
-
-
-            {/* The thumb */}
-            <div
-                className="gallery-scrollbar-thumb"
-                onMouseDown={onMouseDown}
-                onTouchStart={onTouchStart}
-                style={{
-                    position: "absolute",
-                    top: `${thumbPos}px`,
-                    height: `${thumbHeight}px`,
-                }}
-                >
-            </div>
-        </div>
+        </>
     );
 }
