@@ -9,6 +9,11 @@ import useResizeObserver from "@react-hook/resize-observer";
 export const SCROLLBAR_WIDTH = 22;
 
 //
+// Defines the size of the scrollbar hit test area.
+//
+const SCROLLBAR_HITTEST_MULTIPLIER = 3;
+
+//
 // Gutter above and below the scrollbar.
 //
 const VERTICAL_GUTTER = 2;
@@ -309,7 +314,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 <div
                     className="gallery-scrollbar"
                     style={{
-                        width: `${SCROLLBAR_WIDTH*5}px`,
+                        width: `${SCROLLBAR_WIDTH*SCROLLBAR_HITTEST_MULTIPLIER}px`,
                         opacity: 0,
                         pointerEvents: "auto",
                     }}
