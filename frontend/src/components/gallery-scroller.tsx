@@ -132,12 +132,6 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         setIsDragging(true);
     };
 
-    // Scroll effect on the gallery div
-    useEffect(() => { //fio:
-        //todo::
-        // setScrollTop((thumbPos - VERTICAL_GUTTER) / scrollbarHeight * galleryLayout!.galleryHeight);
-    }, [thumbPos]);    
-
     //
     // Calculates the scroll position for a mouse Y position.
     //
