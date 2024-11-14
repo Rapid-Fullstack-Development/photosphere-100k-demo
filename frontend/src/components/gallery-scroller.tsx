@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { IGalleryLayout } from "../lib/create-layout";
 import { IGalleryRow } from "../lib/gallery-item";
+import useResizeObserver from "@react-hook/resize-observer";
 
 //
 // Width of the custom scrollbar on the right of the gallery.
@@ -57,19 +58,33 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         setThumbPos(Math.min(Math.max(VERTICAL_GUTTER, thumbPos), scrollbarHeight - thumbHeight));
     }
 
+    //
+    // Updates the scrollbar height based on the height of the container.
+    //
+    function updateScrollbarHeight() {
+        const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (VERTICAL_GUTTER * 2);
+        setScrollbarHeight(_scrollbarHeight);
+        updateThumbPos(VERTICAL_GUTTER + (scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight);
+    }
+
     useEffect(() => {
         setThumbHeight(Math.max(MIN_SCROLLTHUMB_HEIGHT, (galleryContainerHeight / galleryLayout?.galleryHeight) * scrollbarHeight));
     }, [galleryContainerHeight, galleryLayout?.galleryHeight, scrollbarHeight]);
     
     useEffect(() => {
         if (containerRef.current) {
-            const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (VERTICAL_GUTTER * 2);
-            setScrollbarHeight(_scrollbarHeight);
-            updateThumbPos(VERTICAL_GUTTER + (scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight);
+            updateScrollbarHeight();
         }
+
     }, [scrollTop, galleryLayout]);
 
     // Mouse support for desktop.
+    //
+    // Updates the gallery width when the container is resized.
+    //
+    useResizeObserver(containerRef, () => {
+        updateScrollbarHeight();
+    });
     useEffect(() => {
         if (isDragging) {
             function onMouseMove(e: MouseEvent) {
