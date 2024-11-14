@@ -196,12 +196,14 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         <div
             ref={containerRef}
             className="gallery-scrollbar"
-            onMouseDown={onMouseDown}
-            onTouchStart={onTouchStart}
             style={{
                 width: `${SCROLLBAR_WIDTH}px`,
             }}
-            onClick={event => {
+            onMouseUp={event => {
+                if (isDragging) {
+                    return;
+                }
+                
                 //
                 // Calculate the percentage of the scrollbar clicked and scroll the gallery to that position.
                 //
@@ -215,6 +217,8 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             {/* The thumb */}
             <div
                 className="gallery-scrollbar-thumb"
+                onMouseDown={onMouseDown}
+                onTouchStart={onTouchStart}
                 style={{
                     position: "absolute",
                     top: `${thumbPos}px`,
