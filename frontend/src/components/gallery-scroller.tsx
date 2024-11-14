@@ -6,7 +6,7 @@ import useResizeObserver from "@react-hook/resize-observer";
 //
 // Width of the custom scrollbar on the right of the gallery.
 //
-export const SCROLLBAR_WIDTH = 44;
+export const SCROLLBAR_WIDTH = 22;
 
 //
 // Gutter above and below the scrollbar.
