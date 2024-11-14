@@ -34,11 +34,6 @@ export interface IGalleryScrollerProps {
     scrollTop: number;
 
     //
-    // Sets the scroll position of the gallery.
-    //
-    setScrollTop: (scrollTop: number) => void;
-
-    //
     // Scrolls the gallery to a specific position.
     //
     scrollTo: (scrollTop: number) => void;
@@ -47,7 +42,7 @@ export interface IGalleryScrollerProps {
 //
 // A custom scrollbar for the gallery.
 //
-export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollTop, setScrollTop, scrollTo }: IGalleryScrollerProps) {
+export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollTop, scrollTo }: IGalleryScrollerProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
