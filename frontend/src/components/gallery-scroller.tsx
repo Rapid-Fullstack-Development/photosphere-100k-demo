@@ -309,7 +309,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 <div
                     className="gallery-scrollbar"
                     style={{
-                        width: `${SCROLLBAR_WIDTH*2}px`,
+                        width: `${SCROLLBAR_WIDTH*5}px`,
                         opacity: 0,
                         pointerEvents: "auto",
                     }}
