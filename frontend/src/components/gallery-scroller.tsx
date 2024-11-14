@@ -53,7 +53,20 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     const [isDraggingTouch, setIsDraggingTouch] = useState(false);
     const [isDraggingMouse, setIsDraggingMouse] = useState(false);
     const [hover, setHover] = useState(false);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
     const deltaY = useRef(0);
+
+    useEffect(() => {
+        // Check if it's a touch device
+        const checkTouchDevice = () => {
+            setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        };
+        checkTouchDevice();
+        window.addEventListener('resize', checkTouchDevice);
+
+        // Cleanup event listener on unmount
+        return () => window.removeEventListener('resize', checkTouchDevice);
+    }, []);
 
     function updateThumbPos(thumbPos: number): void {
         setThumbPos(Math.min(Math.max(VERTICAL_GUTTER, thumbPos), scrollbarHeight - thumbHeight));
@@ -204,10 +217,14 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 width: `${SCROLLBAR_WIDTH}px`,
             }}
             onMouseEnter={() => {
-                setHover(true);
+                if (!isTouchDevice) {
+                    setHover(true);
+                }
             }}
             onMouseLeave={() => {
-                setHover(false);
+                if (!isTouchDevice) {
+                    setHover(false);
+                }
             }}
             onMouseUp={event => {
                 if (isDraggingTouch || isDraggingMouse) {
