@@ -54,14 +54,24 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     const [mouseY, setMouseY] = useState<number | undefined>(undefined);
     const [scrollbarHeight, setScrollbarHeight] = useState<number>(0);
     const [thumbPos, setThumbPos] = useState<number>(0);
+    const [thumbHeight, setThumbHeight] = useState<number>(0);
     const [isDragging, setIsDragging] = useState(false);
     const deltaY = useRef(0);
+
+    function updateThumbPos(thumbPos: number): void {
+        setThumbPos(Math.min(Math.max(VERTICAL_GUTTER, thumbPos), scrollbarHeight - thumbHeight));
+    }
+
+    useEffect(() => {
+        setThumbHeight(Math.max(MIN_SCROLLTHUMB_HEIGHT, (galleryContainerHeight / galleryLayout?.galleryHeight) * scrollbarHeight));
+    }, [galleryContainerHeight, galleryLayout?.galleryHeight, scrollbarHeight]);
     
     useEffect(() => {
         if (containerRef.current) {
             const _scrollbarHeight = (containerRef.current?.clientHeight || 0) - (VERTICAL_GUTTER * 2);
             setScrollbarHeight(_scrollbarHeight);
-            setThumbPos(VERTICAL_GUTTER + ((scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight));
+            //fio: setThumbPos(VERTICAL_GUTTER + ((scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight));
+            updateThumbPos(VERTICAL_GUTTER + (scrollTop / galleryLayout!.galleryHeight) * _scrollbarHeight);
         }
     }, [scrollTop, galleryLayout]);
 
@@ -82,7 +92,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     useEffect(() => {
         if (isDragging) {
             function onMouseMove(e: MouseEvent) {
-                setThumbPos(e.clientY - deltaY.current);
+                updateThumbPos(e.clientY - deltaY.current);                
                 setScrollTop(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
             }
 
@@ -104,7 +114,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     useEffect(() => {
         if (isDragging) {
             function onTouchMove(e: TouchEvent) {
-                setThumbPos(e.touches[0].clientY - deltaY.current);
+                updateThumbPos(e.touches[0].clientY - deltaY.current);
                 setScrollTop(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
             };
 
@@ -222,7 +232,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 style={{
                     position: "absolute",
                     top: `${thumbPos}px`,
-                    height: `${Math.max(MIN_SCROLLTHUMB_HEIGHT, (galleryContainerHeight / galleryLayout?.galleryHeight) * scrollbarHeight)}px`,
+                    height: `${thumbHeight}px`,
                 }}
                 >
             </div>
