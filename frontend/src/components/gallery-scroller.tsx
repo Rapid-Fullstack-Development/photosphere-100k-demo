@@ -50,7 +50,8 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
     const [scrollbarHeight, setScrollbarHeight] = useState<number>(0);
     const [thumbPos, setThumbPos] = useState<number>(0);
     const [thumbHeight, setThumbHeight] = useState<number>(0);
-    const [isDragging, setIsDragging] = useState(false);
+    const [isDraggingTouch, setIsDraggingTouch] = useState(false);
+    const [isDraggingMouse, setIsDraggingMouse] = useState(false);
     const [hover, setHover] = useState(false);
     const deltaY = useRef(0);
 
@@ -86,14 +87,14 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
         updateScrollbarHeight();
     });
     useEffect(() => {
-        if (isDragging) {
+        if (isDraggingMouse) {
             function onMouseMove(e: MouseEvent) {
                 updateThumbPos(e.clientY - deltaY.current);                
                 scrollTo(calcScrollPos(e.clientY - deltaY.current - VERTICAL_GUTTER));
             }
 
             function onMouseUp() {
-                setIsDragging(false);                
+                setIsDraggingMouse(false);                
             }
 
             document.addEventListener('mousemove', onMouseMove);
@@ -104,18 +105,18 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 document.removeEventListener('mouseup', onMouseUp);
             };
         }
-    }, [isDragging, deltaY]);
+    }, [isDraggingMouse, deltaY]);
 
     // Touch support for mobile.
     useEffect(() => {
-        if (isDragging) {
+        if (isDraggingTouch) {
             function onTouchMove(e: TouchEvent) {
                 updateThumbPos(e.touches[0].clientY - deltaY.current);
                 scrollTo(calcScrollPos(e.touches[0].clientY - deltaY.current - VERTICAL_GUTTER));
             };
 
             function onTouchEnd() {
-                setIsDragging(false);                
+                setIsDraggingTouch(false);                
             }
 
             document.addEventListener('touchmove', onTouchMove);
@@ -126,16 +127,16 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 document.removeEventListener('touchend', onTouchEnd);
             };
         }
-    }, [isDragging, deltaY]);    
+    }, [isDraggingTouch, deltaY]);    
 
     function onMouseDown(e: React.MouseEvent) {
         deltaY.current = e.clientY - thumbPos;
-        setIsDragging(true);
+        setIsDraggingMouse(true);
     };
 
     function onTouchStart(e: React.TouchEvent) {
         deltaY.current = e.touches[0].clientY - thumbPos;
-        setIsDragging(true);
+        setIsDraggingTouch(true);
     };
 
     //
@@ -209,7 +210,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
                 setHover(false);
             }}
             onMouseUp={event => {
-                if (isDragging) {
+                if (isDraggingTouch || isDraggingMouse) {
                     return;
                 }
                 
@@ -223,7 +224,7 @@ export function GalleryScroller({ galleryContainerHeight, galleryLayout, scrollT
             >
 
             {/* Pop out timeline. */}
-            {(isDragging || hover) &&
+            {(isDraggingTouch || isDraggingMouse || hover) &&
                 <div
                     style={{
                         position: "absolute",
