@@ -1,5 +1,7 @@
 # Photosphere 100k demo
 
+UPDATE: The latest version of of the Photosphere 100k demo is deployed from the core Photosphere monorepo: https://github.com/ashleydavis/photosphere
+
 An experimental fork of Photosphere that removes the database and stores metadata in S3.
 
 See 100,000 photos in the live demo: [https://photosphere-100k.codecapers.com.au](https://photosphere-100k.codecapers.com.au/)
