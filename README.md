@@ -1,6 +1,6 @@
 # Photosphere 100k demo
 
-UPDATE: The latest version of of the Photosphere 100k demo is deployed from the core Photosphere monorepo: https://github.com/ashleydavis/photosphere
+UPDATE: The latest version of of the Photosphere 100k demo is deployed from the core Photosphere monorepo: https://github.com/ashleydavis/photosphere. The code base in this repo is not maintained.
 
 An experimental fork of Photosphere that removes the database and stores metadata in S3.
 
